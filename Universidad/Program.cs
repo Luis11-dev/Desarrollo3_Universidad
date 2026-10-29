@@ -1,4 +1,3 @@
-using Universidad.Controllers;
 using Universidad.Util;
 using System;
 
@@ -9,7 +8,6 @@ namespace Universidad
         static void Main(string[] args)
         {
             IConsoleWriter consoleWriter = Startup.InitConsoleWriter();
-            SalesController salesController = Startup.InitSalesController(consoleWriter);
 
             bool endProgram = false;
             string input = string.Empty;
@@ -18,10 +16,10 @@ namespace Universidad
             do
             {
                 consoleWriter.Clear();
-                consoleWriter.DisplayInitialMessage("Car Dealership");
+                consoleWriter.DisplayInitialMessage("Sistema Universitario");
                 consoleWriter.DisplayMenu(
                     "Escoja una de las siguientes opciones: ",
-                    "Modulo de ventas",
+                    "Modulo de Profesores",
                     "Salir"
                 );
 
@@ -36,7 +34,8 @@ namespace Universidad
                 switch (option)
                 {
                     case 1:
-                        salesController.DisplayMenu();
+                        consoleWriter.ShowMessage("\nModulo de Profesores en construccion...");
+                        consoleWriter.WaitForKey();
                         break;
                     case 2:
                         endProgram = true;
