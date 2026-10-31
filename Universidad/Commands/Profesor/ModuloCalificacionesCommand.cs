@@ -42,7 +42,7 @@ namespace Universidad.Commands.Profesor
                 }
                 opcionesGrupos[grupos.Count] = "Volver al menu anterior";
 
-                _writer.DisplayMenu("1. Seleccione uno de sus grupos asignados:", opcionesGrupos);
+                _writer.DisplayMenu("Seleccione uno de sus grupos asignados:", opcionesGrupos);
 
                 string inputGrupo = new Validator("Ingrese su opcion: ")
                     .NotEmpty()

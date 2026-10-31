@@ -17,7 +17,7 @@ namespace Universidad.Services
             _profesorRepository = profesorRepository;
         }
 
-        // Validación general de rol según página 1 del PDF
+        // Validación general de rol
         public void ValidarRolProfesor(IAutentication usuarioActual)
         {
             if (usuarioActual == null || usuarioActual.Rol != Rol.Profesor)
@@ -216,7 +216,7 @@ namespace Universidad.Services
             return ausencia;
         }
 
-        // 6. Consultar su contrato y su planilla de pago (Páginas 3 y 7 del PDF)
+        // 6. Consultar su contrato y su planilla de pago
         public (List<Grupo> GruposContratados, decimal SalarioBaseTotal, int CantidadAusencias, int HorasDescontadas, decimal DescuentoTotal, decimal SalarioNeto) ConsultarContratoYPlanilla(Profesor profesor)
         {
             ValidarRolProfesor(profesor);

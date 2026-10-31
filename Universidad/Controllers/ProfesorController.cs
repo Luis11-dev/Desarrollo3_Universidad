@@ -53,7 +53,7 @@ namespace Universidad.Controllers
 
                 _writer.DisplayMenu(
                     "Seleccione una opcion:",
-                    "Ver estudiantes de mi grupo",
+                    "Ver estudiantes de mi grupos",
                     "Modulo de calificaciones (Registrar notas, Ver notas, Convocatoria)",
                     "Marcar asistencia a clase",
                     "Consultar mi contrato y planilla de pago",
