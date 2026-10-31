@@ -1,10 +1,10 @@
+
 namespace Universidad.Models
 {
     public interface IAutentication
     {
-        public string User {get;}
-        public string Password {get;}
-        public Rol Rol {get;}
-
+        string User { get; }
+        string Password { get; }
+        Rol Rol { get; }
     }
 }

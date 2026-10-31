@@ -1,3 +1,4 @@
+
 using Universidad.Util;
 using System;
 
@@ -20,13 +21,14 @@ namespace Universidad
                 consoleWriter.DisplayMenu(
                     "Escoja una de las siguientes opciones: ",
                     "Modulo de Profesores",
+                    "Modulo de Estudiantes",
                     "Salir"
                 );
 
                 input = new Validator("Ingrese su opcion: ")
                     .NotEmpty()
                     .OnlyDigits()
-                    .InputBetweenXandY(1, 2)
+                    .InputBetweenXandY(1, 3)
                     .ReadAndValidate();
 
                 option = int.Parse(input);
@@ -37,7 +39,13 @@ namespace Universidad
                         consoleWriter.ShowMessage("\nModulo de Profesores en construccion...");
                         consoleWriter.WaitForKey();
                         break;
+
                     case 2:
+                        consoleWriter.ShowMessage("\nModulo de Estudiantes en construccion...");
+                        consoleWriter.WaitForKey();
+                        break;
+
+                    case 3:
                         endProgram = true;
                         break;
                 }
@@ -46,3 +54,4 @@ namespace Universidad
         }
     }
 }
+
