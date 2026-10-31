@@ -5,4 +5,9 @@ namespace Universidad.Models
         void Execute();
         void Undo();
     }
+
+    public interface IController
+    {
+        void DisplayMenu();
+    }
 }

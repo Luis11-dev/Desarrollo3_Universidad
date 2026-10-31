@@ -7,7 +7,7 @@ using Universidad.Util;
 
 namespace Universidad.Controllers
 {
-    public class ProfesorController
+    public class ProfesorController : IController
     {
         private readonly ProfesorService _profesorService;
         private readonly IConsoleWriter _writer;
@@ -81,4 +81,3 @@ namespace Universidad.Controllers
         }
     }
 }
-

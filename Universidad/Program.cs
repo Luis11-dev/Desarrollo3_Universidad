@@ -1,6 +1,6 @@
-
+using Universidad.Controllers;
+using Universidad.Models;
 using Universidad.Util;
-using System;
 
 namespace Universidad
 {
@@ -9,49 +9,26 @@ namespace Universidad
         static void Main(string[] args)
         {
             IConsoleWriter consoleWriter = Startup.InitConsoleWriter();
+            AuthController authController = Startup.InitAuthController();
 
-            bool endProgram = false;
-            string input = string.Empty;
-            int option = -1;
+            bool continuar = true;
 
-            do
+            while (continuar)
             {
-                consoleWriter.Clear();
-                consoleWriter.DisplayInitialMessage("Sistema Universitario");
-                consoleWriter.DisplayMenu(
-                    "Escoja una de las siguientes opciones: ",
-                    "Modulo de Profesores",
-                    "Modulo de Estudiantes",
-                    "Salir"
-                );
+                IAutentication? usuario = authController.IniciarSesion();
 
-                input = new Validator("Ingrese su opcion: ")
-                    .NotEmpty()
-                    .OnlyDigits()
-                    .InputBetweenXandY(1, 3)
-                    .ReadAndValidate();
-
-                option = int.Parse(input);
-
-                switch (option)
+                if (usuario == null)
                 {
-                    case 1:
-                        consoleWriter.ShowMessage("\nModulo de Profesores en construccion...");
-                        consoleWriter.WaitForKey();
-                        break;
-
-                    case 2:
-                        consoleWriter.ShowMessage("\nModulo de Estudiantes en construccion...");
-                        consoleWriter.WaitForKey();
-                        break;
-
-                    case 3:
-                        endProgram = true;
-                        break;
+                    continuar = false;
                 }
+                else
+                {
+                    IController controller = ControllerFactory.CrearControlador(usuario);
+                    controller.DisplayMenu();
+                }
+            }
 
-            } while (!endProgram);
+            consoleWriter.ShowMessage("\nSesion finalizada. Gracias por utilizar el sistema.");
         }
     }
 }
-
