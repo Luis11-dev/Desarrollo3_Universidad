@@ -6,8 +6,26 @@ namespace Universidad.Data
 {
     public static class Seeds
     {
-        public static void Inicializar(ProfesorRepository profesorRepository, EstudianteRepository estudianteRepository)
+        public static void Inicializar(
+            ProfesorRepository profesorRepository,
+            EstudianteRepository estudianteRepository,
+            AdministradorRepository? administradorRepository = null)
         {
+            if (administradorRepository != null && administradorRepository.GetAll().Count == 0)
+            {
+                Administrador admin = new Administrador(
+                    cedula: "001-010180-0000A",
+                    nombre: "Administrador del Sistema",
+                    correoElectronico: "admin@universidad.edu",
+                    numeroCelular: 88889999,
+                    direccion: "Oficina Central de Registro",
+                    genero: Genero.Masculino,
+                    user: "admin",
+                    password: "1234"
+                );
+                administradorRepository.Add(admin);
+            }
+
             if (profesorRepository.GetAll().Count == 0)
             {
                 Profesor profesor = new Profesor(

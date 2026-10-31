@@ -3,6 +3,7 @@ using Universidad.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace Universidad.Services
 {
@@ -24,6 +25,113 @@ namespace Universidad.Services
             {
                 throw new UnauthorizedAccessException("Acceso denegado: El usuario actual no tiene permisos de Profesor.");
             }
+        }
+
+        // Registrar un nuevo profesor en el sistema
+        public Profesor RegistrarProfesor(
+            string cedula,
+            string nombre,
+            string correo,
+            int numeroCelular,
+            string direccion,
+            Genero genero,
+            string estadoCivil,
+            string profesion,
+            string? especialidad,
+            string user,
+            string password)
+        {
+            if (string.IsNullOrWhiteSpace(cedula))
+            {
+                throw new ArgumentException("La cedula es obligatoria.");
+            }
+            if (string.IsNullOrWhiteSpace(nombre))
+            {
+                throw new ArgumentException("El nombre es obligatorio.");
+            }
+            if (string.IsNullOrWhiteSpace(correo))
+            {
+                throw new ArgumentException("El correo electronico es obligatorio.");
+            }
+            if (numeroCelular <= 0)
+            {
+                throw new ArgumentException("El numero de celular no es valido.");
+            }
+            if (string.IsNullOrWhiteSpace(direccion))
+            {
+                throw new ArgumentException("La direccion es obligatoria.");
+            }
+            if (string.IsNullOrWhiteSpace(estadoCivil))
+            {
+                throw new ArgumentException("El estado civil es obligatorio.");
+            }
+            if (string.IsNullOrWhiteSpace(profesion))
+            {
+                throw new ArgumentException("La profesion es obligatoria.");
+            }
+            if (string.IsNullOrWhiteSpace(user))
+            {
+                throw new ArgumentException("El nombre de usuario es obligatorio.");
+            }
+            if (string.IsNullOrWhiteSpace(password))
+            {
+                throw new ArgumentException("La contrasenia es obligatoria.");
+            }
+
+            cedula = cedula.Trim().ToUpperInvariant();
+            nombre = nombre.Trim();
+            correo = correo.Trim();
+            direccion = direccion.Trim();
+            estadoCivil = estadoCivil.Trim();
+            profesion = profesion.Trim();
+            especialidad = string.IsNullOrWhiteSpace(especialidad) ? null : especialidad.Trim();
+            user = user.Trim();
+
+            string patronCedula = @"^\d{3}-\d{6}-\d{4}[A-Za-z]$";
+            if (!Regex.IsMatch(cedula, patronCedula))
+            {
+                throw new ArgumentException("El formato de la cedula debe ser 000-000000-0000X.");
+            }
+
+            string patronCorreo = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
+            if (!Regex.IsMatch(correo, patronCorreo))
+            {
+                throw new ArgumentException("El formato del correo electronico no es valido.");
+            }
+
+            if (_profesorRepository.GetByCedula(cedula) != null)
+            {
+                throw new InvalidOperationException("Ya existe un profesor registrado con esa cedula.");
+            }
+
+            if (_profesorRepository.GetByUser(user) != null)
+            {
+                throw new InvalidOperationException("El nombre de usuario ya esta en uso por otro profesor.");
+            }
+
+            bool correoExiste = _profesorRepository.GetAll()
+                .Any(p => p.CorreoElectronico.Equals(correo, StringComparison.OrdinalIgnoreCase));
+            if (correoExiste)
+            {
+                throw new InvalidOperationException("El correo electronico ya esta registrado.");
+            }
+
+            Profesor profesor = new Profesor(
+                cedula,
+                nombre,
+                correo,
+                numeroCelular,
+                direccion,
+                genero,
+                estadoCivil,
+                profesion,
+                especialidad,
+                user,
+                password
+            );
+
+            _profesorRepository.Add(profesor);
+            return profesor;
         }
 
         // Obtener los grupos asignados únicamente a este profesor
@@ -238,4 +346,3 @@ namespace Universidad.Services
         }
     }
 }
-

@@ -10,6 +10,7 @@ namespace Universidad.Util
     {
         private static ProfesorRepository? _profesorRepository;
         private static EstudianteRepository? _estudianteRepository;
+        private static AdministradorRepository? _administradorRepository;
         private static IConsoleWriter? _consoleWriter;
 
         public static IConsoleWriter InitConsoleWriter()
@@ -26,9 +27,9 @@ namespace Universidad.Util
             if (_profesorRepository == null)
             {
                 _profesorRepository = new ProfesorRepository();
-                if (_estudianteRepository != null)
+                if (_estudianteRepository != null && _administradorRepository != null)
                 {
-                    Seeds.Inicializar(_profesorRepository, _estudianteRepository);
+                    Seeds.Inicializar(_profesorRepository, _estudianteRepository, _administradorRepository);
                 }
             }
             return _profesorRepository;
@@ -39,30 +40,51 @@ namespace Universidad.Util
             if (_estudianteRepository == null)
             {
                 ProfesorRepository profRepo = GetProfesorRepository();
+                AdministradorRepository adminRepo = GetAdministradorRepository();
                 _estudianteRepository = new EstudianteRepository(profRepo);
-                Seeds.Inicializar(profRepo, _estudianteRepository);
+                Seeds.Inicializar(profRepo, _estudianteRepository, adminRepo);
             }
             return _estudianteRepository;
+        }
+
+        public static AdministradorRepository GetAdministradorRepository()
+        {
+            if (_administradorRepository == null)
+            {
+                _administradorRepository = new AdministradorRepository();
+                if (_profesorRepository != null && _estudianteRepository != null)
+                {
+                    Seeds.Inicializar(_profesorRepository, _estudianteRepository, _administradorRepository);
+                }
+            }
+            return _administradorRepository;
         }
 
         public static AuthService InitAuthService()
         {
             ProfesorRepository profRepo = GetProfesorRepository();
             EstudianteRepository estRepo = GetEstudianteRepository();
-            return new AuthService(profRepo, estRepo);
+            AdministradorRepository adminRepo = GetAdministradorRepository();
+            return new AuthService(profRepo, estRepo, adminRepo);
         }
 
         public static AuthController InitAuthController(int maxIntentos = 3)
         {
             AuthService authService = InitAuthService();
             IConsoleWriter writer = InitConsoleWriter();
-            return new AuthController(authService, writer);
+            return new AuthController(authService, writer, maxIntentos);
         }
 
         public static ProfesorService InitProfesorService(ProfesorRepository? profesorRepository = null)
         {
             ProfesorRepository repo = profesorRepository ?? GetProfesorRepository();
             return new ProfesorService(repo);
+        }
+
+        public static EstudianteService InitEstudianteService(EstudianteRepository? estudianteRepository = null)
+        {
+            EstudianteRepository repo = estudianteRepository ?? GetEstudianteRepository();
+            return new EstudianteService(repo);
         }
 
         public static ProfesorController InitProfesorController(
@@ -86,6 +108,18 @@ namespace Universidad.Util
             Estudiante estudiante = estudianteActual ?? new Estudiante();
 
             return new EstudianteController(estudiante, writer);
+        }
+
+        public static AdministradorController InitAdministradorController(
+            Administrador? adminActual = null,
+            IConsoleWriter? consoleWriter = null)
+        {
+            IConsoleWriter writer = consoleWriter ?? InitConsoleWriter();
+            ProfesorService profService = InitProfesorService();
+            EstudianteService estService = InitEstudianteService();
+            Administrador admin = adminActual ?? new Administrador();
+
+            return new AdministradorController(profService, estService, writer, admin);
         }
     }
 }
