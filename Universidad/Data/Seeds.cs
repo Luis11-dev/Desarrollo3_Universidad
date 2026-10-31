@@ -28,7 +28,7 @@ namespace Universidad.Data
 
                 Grupo grupo = new Grupo(
                     idGrupo: "G01",
-                    nombreGrupo: "Grupo 3T1-SIS",
+                    nombreGrupo: "Grupo ISI-IIIB",
                     materia: "Desarrollo de Aplicaciones III",
                     cupos: 30,
                     semestre: 1,
