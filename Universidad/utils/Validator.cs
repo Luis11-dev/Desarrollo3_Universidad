@@ -7,7 +7,7 @@ namespace Universidad.Util
     public class Validator
     {
         private readonly string _promptMessage;
-        private readonly List<Func<string, (bool IsValid, string ErrorMessage)>> _rules = new List<Func<string, (bool IsValid, string ErrorMessage)>>();
+        protected readonly List<Func<string, (bool IsValid, string ErrorMessage)>> _rules = new List<Func<string, (bool IsValid, string ErrorMessage)>>();
 
         public Validator(string promptMessage)
         {

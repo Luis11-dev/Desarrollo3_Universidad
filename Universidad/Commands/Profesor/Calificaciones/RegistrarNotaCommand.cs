@@ -65,8 +65,15 @@ namespace Universidad.Commands.Profesor.Calificaciones
 
                 _writer.ShowMessage($"\nIngresando calificaciones para: {estudiante.Nombre} ({estudiante.Cedula})");
 
-                int acumuladoEnEspera = PedirNotaConExcepcion("Ingrese el Acumulado (0 a 60): ", 0, 60);
-                int examenEnEspera = PedirNotaConExcepcion("Ingrese el Examen (0 a 40): ", 0, 40);
+                int acumuladoEnEspera = int.Parse(new ValidatorProfesor("Ingrese el Acumulado (0 a 60): ")
+                    .NotEmpty()
+                    .NotaEnRango(0, 60)
+                    .ReadAndValidate());
+
+                int examenEnEspera = int.Parse(new ValidatorProfesor("Ingrese el Examen (0 a 40): ")
+                    .NotEmpty()
+                    .NotaEnRango(0, 40)
+                    .ReadAndValidate());
 
                 // confirmacion antes de guardar para que pueda corregir o cancelar
                 bool decisionTomada = false;
@@ -119,11 +126,17 @@ namespace Universidad.Commands.Profesor.Calificaciones
                             break;
 
                         case 2:
-                            acumuladoEnEspera = PedirNotaConExcepcion("\nIngrese el nuevo valor de Acumulado (0 a 60): ", 0, 60);
+                            acumuladoEnEspera = int.Parse(new ValidatorProfesor("\nIngrese el nuevo valor de Acumulado (0 a 60): ")
+                                .NotEmpty()
+                                .NotaEnRango(0, 60)
+                                .ReadAndValidate());
                             break;
 
                         case 3:
-                            examenEnEspera = PedirNotaConExcepcion("\nIngrese el nuevo valor de Examen (0 a 40): ", 0, 40);
+                            examenEnEspera = int.Parse(new ValidatorProfesor("\nIngrese el nuevo valor de Examen (0 a 40): ")
+                                .NotEmpty()
+                                .NotaEnRango(0, 40)
+                                .ReadAndValidate());
                             break;
 
                         case 4:
@@ -138,36 +151,6 @@ namespace Universidad.Commands.Profesor.Calificaciones
             {
                 _writer.ShowError(ex.Message);
                 _writer.WaitForKey();
-            }
-        }
-
-        private int PedirNotaConExcepcion(string mensaje, int min, int max)
-        {
-            while (true)
-            {
-                try
-                {
-                    Console.Write(mensaje);
-                    string entrada = (Console.ReadLine() ?? string.Empty).Trim();
-
-                    if (!int.TryParse(entrada, out int valor))
-                    {
-                        throw new FormatException("El valor ingresado no es numerico. Debe ingresar un numero entero.");
-                    }
-
-                    if (valor < min || valor > max)
-                    {
-                        throw new ArgumentOutOfRangeException(
-                            nameof(valor),
-                            $"El valor ingresado ({valor}) esta fuera del rango permitido ({min} a {max}).");
-                    }
-
-                    return valor;
-                }
-                catch (Exception ex)
-                {
-                    _writer.ShowError(ex.Message);
-                }
             }
         }
 
@@ -188,4 +171,3 @@ namespace Universidad.Commands.Profesor.Calificaciones
         }
     }
 }
-

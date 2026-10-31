@@ -67,7 +67,10 @@ namespace Universidad.Commands.Profesor.Calificaciones
 
                 _writer.ShowMessage($"\nRegistrando convocatoria para: {estudiante.Nombre} (Nota ordinaria: {calificacionSeleccionada.Nota})");
 
-                int notaExtraEnEspera = PedirNotaConExcepcion("Ingrese la nota extraordinaria de convocatoria (0 a 100): ", 0, 100);
+                int notaExtraEnEspera = int.Parse(new ValidatorProfesor("Ingrese la nota extraordinaria de convocatoria (0 a 100): ")
+                    .NotEmpty()
+                    .NotaEnRango(0, 100)
+                    .ReadAndValidate());
 
                 bool decisionTomada = false;
                 while (!decisionTomada)
@@ -119,7 +122,10 @@ namespace Universidad.Commands.Profesor.Calificaciones
                             break;
 
                         case 2:
-                            notaExtraEnEspera = PedirNotaConExcepcion("\nIngrese el nuevo valor de la nota extraordinaria (0 a 100): ", 0, 100);
+                            notaExtraEnEspera = int.Parse(new ValidatorProfesor("\nIngrese el nuevo valor de la nota extraordinaria (0 a 100): ")
+                                .NotEmpty()
+                                .NotaEnRango(0, 100)
+                                .ReadAndValidate());
                             break;
 
                         case 3:
@@ -134,36 +140,6 @@ namespace Universidad.Commands.Profesor.Calificaciones
             {
                 _writer.ShowError(ex.Message);
                 _writer.WaitForKey();
-            }
-        }
-
-        private int PedirNotaConExcepcion(string mensaje, int min, int max)
-        {
-            while (true)
-            {
-                try
-                {
-                    Console.Write(mensaje);
-                    string entrada = (Console.ReadLine() ?? string.Empty).Trim();
-
-                    if (!int.TryParse(entrada, out int valor))
-                    {
-                        throw new FormatException("El valor ingresado no es numerico. Debe ingresar un numero entero.");
-                    }
-
-                    if (valor < min || valor > max)
-                    {
-                        throw new ArgumentOutOfRangeException(
-                            nameof(valor),
-                            $"El valor ingresado ({valor}) esta fuera del rango permitido ({min} a {max}).");
-                    }
-
-                    return valor;
-                }
-                catch (Exception ex)
-                {
-                    _writer.ShowError(ex.Message);
-                }
             }
         }
 
@@ -184,4 +160,3 @@ namespace Universidad.Commands.Profesor.Calificaciones
         }
     }
 }
-

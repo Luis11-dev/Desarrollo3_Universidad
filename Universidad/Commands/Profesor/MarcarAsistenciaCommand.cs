@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using Universidad.Models;
 using Universidad.Services;
 using Universidad.Util;
@@ -109,7 +108,12 @@ namespace Universidad.Commands.Profesor
 
         private void FlujoSimularHoraEntrada(Grupo grupo, TimeSpan horaLimite)
         {
-            TimeSpan horaEnEspera = PedirHoraConExcepcion($"\nIngrese la hora de entrada (formato HH:mm, ej. {grupo.HoraInicio:hh\\:mm}): ");
+            string inputHora = new ValidatorProfesor($"\nIngrese la hora de entrada (formato HH:mm, ej. {grupo.HoraInicio:hh\\:mm}): ")
+                .NotEmpty()
+                .FormatoHora24h()
+                .ReadAndValidate();
+
+            TimeSpan horaEnEspera = TimeSpan.Parse(inputHora);
 
             bool decisionTomada = false;
             while (!decisionTomada)
@@ -151,7 +155,11 @@ namespace Universidad.Commands.Profesor
                         break;
 
                     case 2:
-                        horaEnEspera = PedirHoraConExcepcion("\nIngrese la nueva hora de entrada (formato HH:mm): ");
+                        string nuevaHora = new ValidatorProfesor("\nIngrese la nueva hora de entrada (formato HH:mm): ")
+                            .NotEmpty()
+                            .FormatoHora24h()
+                            .ReadAndValidate();
+                        horaEnEspera = TimeSpan.Parse(nuevaHora);
                         break;
 
                     case 3:
@@ -207,41 +215,8 @@ namespace Universidad.Commands.Profesor
             _writer.WaitForKey();
         }
 
-        // validador propio para leer la hora en formato HH:mm sin que crashee si escriben mal
-        private TimeSpan PedirHoraConExcepcion(string mensaje)
-        {
-            string[] formatosValidos = { @"hh\:mm", @"h\:mm" };
-
-            while (true)
-            {
-                try
-                {
-                    Console.Write(mensaje);
-                    string entrada = (Console.ReadLine() ?? string.Empty).Trim();
-
-                    if (string.IsNullOrWhiteSpace(entrada))
-                    {
-                        throw new FormatException("Debe ingresar una hora en formato HH:mm (por ejemplo 07:35).");
-                    }
-
-                    if (!TimeSpan.TryParseExact(entrada, formatosValidos, CultureInfo.InvariantCulture, out TimeSpan hora) ||
-                        hora.TotalHours < 0 || hora.TotalHours >= 24)
-                    {
-                        throw new FormatException("Formato de hora invalido. Use el formato de 24 horas HH:mm (por ejemplo 07:30 o 14:15).");
-                    }
-
-                    return hora;
-                }
-                catch (Exception ex)
-                {
-                    _writer.ShowError(ex.Message);
-                }
-            }
-        }
-
         public void Undo()
         {
         }
     }
 }
-
