@@ -1,4 +1,3 @@
-
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,8 +15,8 @@ namespace Universidad.Repositories
             MateriaRepository materiaRepository,
             ProfesorRepository profesorRepository)
         {
-            _materiaRepository = materiaRepository;
-            _profesorRepository = profesorRepository;
+            _materiaRepository = materiaRepository ?? throw new ArgumentNullException(nameof(materiaRepository));
+            _profesorRepository = profesorRepository ?? throw new ArgumentNullException(nameof(profesorRepository));
         }
 
         public List<Inscripcion> ObtenerTodas()
@@ -28,197 +27,145 @@ namespace Universidad.Repositories
         public List<Inscripcion> ObtenerPorEstudiante(string cedula)
         {
             return _inscripciones
-                .Where(i => i.Estudiante.Cedula == cedula)
+                .Where(i => i.Estudiante.Cedula.Equals(cedula, StringComparison.OrdinalIgnoreCase))
                 .ToList();
         }
 
         public List<Inscripcion> ObtenerPorPeriodo(string periodo)
         {
             return _inscripciones
-                .Where(i => i.PeriodoAcademico.Equals(
-                    periodo, StringComparison.OrdinalIgnoreCase))
+                .Where(i => i.PeriodoAcademico.Equals(periodo, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        public List<Inscripcion> ObtenerPorHorario(string idHorario)
+        {
+            return _inscripciones
+                .Where(i => i.Horario.IdHorario.Equals(idHorario, StringComparison.OrdinalIgnoreCase))
                 .ToList();
         }
 
         public void Inscribir(
             Estudiante estudiante,
-            Grupo grupo,
+            HorarioClase horario,
             string periodoAcademico)
         {
             if (estudiante == null)
+            {
                 throw new ArgumentNullException(nameof(estudiante));
+            }
 
-            if (grupo == null)
-                throw new ArgumentNullException(nameof(grupo));
+            if (horario == null)
+            {
+                throw new ArgumentNullException(nameof(horario));
+            }
 
             if (!estudiante.Activo)
-                throw new InvalidOperationException(
-                    "El estudiante está inactivo.");
+            {
+                throw new InvalidOperationException("El estudiante esta inactivo y no puede inscribir materias.");
+            }
 
             if (string.IsNullOrWhiteSpace(periodoAcademico))
-                throw new InvalidOperationException(
-                    "Debe indicar el período académico.");
+            {
+                throw new InvalidOperationException("Debe indicar el periodo academico para la inscripcion.");
+            }
 
-            if (_profesorRepository.GetGrupoById(grupo.IdGrupo) == null)
-                throw new InvalidOperationException(
-                    "El grupo no está registrado.");
+            ValidarPrerrequisitos(estudiante, horario.Materia);
+            ValidarMateriaAprobada(estudiante, horario.Materia);
+            ValidarInscripcionDuplicada(estudiante, horario.Materia, periodoAcademico);
+            ValidarCupo(horario);
+            ValidarCruceHorario(estudiante, horario, periodoAcademico);
 
-            Materia materia = BuscarMateria(grupo);
-
-            ValidarPrerrequisitos(estudiante, materia);
-
-            ValidarMateriaAprobada(estudiante, materia);
-
-            ValidarInscripcionDuplicada(
-                estudiante, grupo, periodoAcademico);
-
-            ValidarCupo(grupo);
-
-            ValidarCruceHorario(
-                estudiante, grupo, periodoAcademico);
-
-            string id = Guid.NewGuid().ToString("N");
+            string id = "INS-" + Guid.NewGuid().ToString("N").Substring(0, 8).ToUpperInvariant();
 
             Inscripcion inscripcion = new Inscripcion(
                 id,
                 estudiante,
-                grupo,
+                horario,
                 periodoAcademico);
 
             _inscripciones.Add(inscripcion);
-            grupo.AgregarEstudiante(estudiante);
+            horario.InscribirEstudiante(estudiante);
+            horario.Grupo.AgregarEstudiante(estudiante);
         }
 
-        private Materia BuscarMateria(Grupo grupo)
+        private void ValidarPrerrequisitos(Estudiante estudiante, Materia materia)
         {
-            Materia? materia = _materiaRepository.ObtenerPorCodigo(
-                grupo.NombreMateria);
-
-            if (materia == null)
+            if (materia.Prerrequisitos == null || materia.Prerrequisitos.Count == 0)
             {
-                materia = _materiaRepository.ObtenerTodas()
-                    .FirstOrDefault(m =>
-                        m.Nombre.Equals(
-                            grupo.NombreMateria,
-                            StringComparison.OrdinalIgnoreCase));
+                return;
             }
 
-            if (materia == null)
-                throw new InvalidOperationException(
-                    $"No se encontró la materia asociada al grupo: {grupo.NombreMateria}.");
+            List<Calificacion> calificaciones = _profesorRepository.GetCalificacionesByEstudiante(estudiante.Cedula);
 
-            return materia;
-        }
-
-        private void ValidarPrerrequisitos(
-            Estudiante estudiante,
-            Materia materia)
-        {
             foreach (string codigo in materia.Prerrequisitos)
             {
-                Materia? prerrequisito =
-                    _materiaRepository.ObtenerPorCodigo(codigo);
+                Materia? prerrequisito = _materiaRepository.ObtenerPorCodigo(codigo);
+                string nombrePrerreq = prerrequisito != null ? prerrequisito.Nombre : codigo;
 
-                if (prerrequisito == null)
-                    throw new InvalidOperationException(
-                        $"No existe el prerrequisito {codigo}.");
-
-                bool aprobado = ObtenerCalificaciones(estudiante)
-                    .Any(c =>
-                        c.Grupo != null &&
-                        c.Grupo.NombreMateria.Equals(
-                            prerrequisito.Nombre,
-                            StringComparison.OrdinalIgnoreCase) &&
-                        c.Estado == EstadoCalificacion.Aprobado);
+                bool aprobado = calificaciones.Any(c =>
+                    c.Estado == EstadoCalificacion.Aprobado &&
+                    c.Materia != null &&
+                    (c.Materia.Codigo.Equals(codigo, StringComparison.OrdinalIgnoreCase) ||
+                     c.Materia.Nombre.Equals(nombrePrerreq, StringComparison.OrdinalIgnoreCase)));
 
                 if (!aprobado)
-                    throw new InvalidOperationException(
-                        $"No puede inscribirse. Primero debe aprobar: {prerrequisito.Nombre}.");
+                {
+                    throw new InvalidOperationException($"No cumple con los prerrequisitos. Debe aprobar primero: {nombrePrerreq} ({codigo}).");
+                }
             }
         }
 
-        private void ValidarMateriaAprobada(
-            Estudiante estudiante,
-            Materia materia)
+        private void ValidarMateriaAprobada(Estudiante estudiante, Materia materia)
         {
-            bool aprobada = ObtenerCalificaciones(estudiante)
-                .Any(c =>
-                    c.Grupo != null &&
-                    c.Grupo.NombreMateria.Equals(
-                        materia.Nombre,
-                        StringComparison.OrdinalIgnoreCase) &&
-                    c.Estado == EstadoCalificacion.Aprobado);
+            List<Calificacion> calificaciones = _profesorRepository.GetCalificacionesByEstudiante(estudiante.Cedula);
 
-            if (aprobada)
-                throw new InvalidOperationException(
-                    "El estudiante ya aprobó esta materia.");
+            bool yaAprobada = calificaciones.Any(c =>
+                c.Estado == EstadoCalificacion.Aprobado &&
+                c.Materia != null &&
+                (c.Materia.Codigo.Equals(materia.Codigo, StringComparison.OrdinalIgnoreCase) ||
+                 c.Materia.Nombre.Equals(materia.Nombre, StringComparison.OrdinalIgnoreCase)));
+
+            if (yaAprobada)
+            {
+                throw new InvalidOperationException($"El estudiante ya aprobo la materia '{materia.Nombre}'. No es posible cursarla nuevamente.");
+            }
         }
 
-        private List<Calificacion> ObtenerCalificaciones(
-            Estudiante estudiante)
-        {
-            return _profesorRepository.GetAllGrupos()
-                .SelectMany(g =>
-                    _profesorRepository.GetCalificacionesByGrupo(g.IdGrupo))
-                .Where(c =>
-                    c.Estudiante != null &&
-                    c.Estudiante.Cedula == estudiante.Cedula)
-                .ToList();
-        }
-
-        private void ValidarInscripcionDuplicada(
-            Estudiante estudiante,
-            Grupo grupo,
-            string periodo)
+        private void ValidarInscripcionDuplicada(Estudiante estudiante, Materia materia, string periodo)
         {
             bool existe = _inscripciones.Any(i =>
-                i.Estudiante.Cedula == estudiante.Cedula &&
-                i.Grupo.NombreMateria.Equals(
-                    grupo.NombreMateria,
-                    StringComparison.OrdinalIgnoreCase) &&
-                i.PeriodoAcademico.Equals(
-                    periodo,
-                    StringComparison.OrdinalIgnoreCase));
+                i.Estudiante.Cedula.Equals(estudiante.Cedula, StringComparison.OrdinalIgnoreCase) &&
+                i.Materia.Codigo.Equals(materia.Codigo, StringComparison.OrdinalIgnoreCase) &&
+                i.PeriodoAcademico.Equals(periodo, StringComparison.OrdinalIgnoreCase));
 
             if (existe)
-                throw new InvalidOperationException(
-                    "El estudiante ya está inscrito en esta materia durante ese período.");
+            {
+                throw new InvalidOperationException($"El estudiante ya se encuentra inscrito en la materia '{materia.Nombre}' para el periodo {periodo}.");
+            }
         }
 
-        private void ValidarCupo(Grupo grupo)
+        private void ValidarCupo(HorarioClase horario)
         {
-            int inscritos = _inscripciones
-                .Where(i => i.Grupo.IdGrupo == grupo.IdGrupo)
-                .Select(i => i.Estudiante.Cedula)
-                .Distinct()
-                .Count();
-
-            inscritos = Math.Max(inscritos, grupo.Estudiantes.Count);
-
-            if (inscritos >= grupo.Cupos)
-                throw new InvalidOperationException(
-                    "El grupo ya no tiene cupos disponibles.");
+            if (horario.EstudiantesInscritos.Count >= horario.Grupo.Cupos)
+            {
+                throw new InvalidOperationException($"El grupo {horario.Grupo.NombreGrupo} ya no tiene cupos disponibles (Capacidad: {horario.Grupo.Cupos}).");
+            }
         }
 
-        private void ValidarCruceHorario(
-            Estudiante estudiante,
-            Grupo grupo,
-            string periodo)
+        private void ValidarCruceHorario(Estudiante estudiante, HorarioClase horario, string periodo)
         {
             bool existeCruce = _inscripciones.Any(i =>
-                i.Estudiante.Cedula == estudiante.Cedula &&
-                i.PeriodoAcademico.Equals(
-                    periodo,
-                    StringComparison.OrdinalIgnoreCase) &&
-                i.Grupo.Dia.Equals(
-                    grupo.Dia,
-                    StringComparison.OrdinalIgnoreCase) &&
-                grupo.HoraInicio < i.Grupo.HoraFin &&
-                grupo.HoraFin > i.Grupo.HoraInicio);
+                i.Estudiante.Cedula.Equals(estudiante.Cedula, StringComparison.OrdinalIgnoreCase) &&
+                i.PeriodoAcademico.Equals(periodo, StringComparison.OrdinalIgnoreCase) &&
+                i.Horario.Dia.Equals(horario.Dia, StringComparison.OrdinalIgnoreCase) &&
+                horario.HoraInicio < i.Horario.HoraFin &&
+                horario.HoraFin > i.Horario.HoraInicio);
 
             if (existeCruce)
-                throw new InvalidOperationException(
-                    "Existe un cruce de horario con otra materia inscrita.");
+            {
+                throw new InvalidOperationException($"Existe un cruce de horario el dia {horario.Dia} entre {horario.HoraInicio:hh\\:mm}-{horario.HoraFin:hh\\:mm} con otra materia ya inscrita.");
+            }
         }
     }
 }

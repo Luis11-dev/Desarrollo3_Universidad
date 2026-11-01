@@ -15,6 +15,7 @@ namespace Universidad.Util
         private static PlanAcademicoRepository? _planAcademicoRepository;
         private static HorarioClaseRepository? _horarioClaseRepository;
         private static ContratoRepository? _contratoRepository;
+        private static InscripcionRepository? _inscripcionRepository;
         private static IConsoleWriter? _consoleWriter;
         private static bool _seedsLoaded = false;
 
@@ -36,7 +37,8 @@ namespace Universidad.Util
                 _materiaRepository != null &&
                 _planAcademicoRepository != null &&
                 _horarioClaseRepository != null &&
-                _contratoRepository != null)
+                _contratoRepository != null &&
+                _inscripcionRepository != null)
             {
                 _seedsLoaded = true;
                 Seeds.Inicializar(
@@ -46,79 +48,58 @@ namespace Universidad.Util
                     _materiaRepository,
                     _planAcademicoRepository,
                     _horarioClaseRepository,
-                    _contratoRepository
+                    _contratoRepository,
+                    _inscripcionRepository
                 );
             }
         }
 
         public static ProfesorRepository GetProfesorRepository()
         {
-            if (_profesorRepository == null)
-            {
-                _profesorRepository = new ProfesorRepository();
-            }
             EnsureAllRepositories();
-            return _profesorRepository;
+            return _profesorRepository!;
         }
 
         public static EstudianteRepository GetEstudianteRepository()
         {
-            if (_estudianteRepository == null)
-            {
-                _estudianteRepository = new EstudianteRepository(GetProfesorRepository());
-            }
             EnsureAllRepositories();
-            return _estudianteRepository;
+            return _estudianteRepository!;
         }
 
         public static AdministradorRepository GetAdministradorRepository()
         {
-            if (_administradorRepository == null)
-            {
-                _administradorRepository = new AdministradorRepository();
-            }
             EnsureAllRepositories();
-            return _administradorRepository;
+            return _administradorRepository!;
         }
 
         public static MateriaRepository GetMateriaRepository()
         {
-            if (_materiaRepository == null)
-            {
-                _materiaRepository = new MateriaRepository();
-            }
             EnsureAllRepositories();
-            return _materiaRepository;
+            return _materiaRepository!;
         }
 
         public static PlanAcademicoRepository GetPlanAcademicoRepository()
         {
-            if (_planAcademicoRepository == null)
-            {
-                _planAcademicoRepository = new PlanAcademicoRepository();
-            }
             EnsureAllRepositories();
-            return _planAcademicoRepository;
+            return _planAcademicoRepository!;
         }
 
         public static HorarioClaseRepository GetHorarioClaseRepository()
         {
-            if (_horarioClaseRepository == null)
-            {
-                _horarioClaseRepository = new HorarioClaseRepository();
-            }
             EnsureAllRepositories();
-            return _horarioClaseRepository;
+            return _horarioClaseRepository!;
         }
 
         public static ContratoRepository GetContratoRepository()
         {
-            if (_contratoRepository == null)
-            {
-                _contratoRepository = new ContratoRepository();
-            }
             EnsureAllRepositories();
-            return _contratoRepository;
+            return _contratoRepository!;
+        }
+
+        public static InscripcionRepository GetInscripcionRepository()
+        {
+            EnsureAllRepositories();
+            return _inscripcionRepository!;
         }
 
         private static void EnsureAllRepositories()
@@ -129,6 +110,7 @@ namespace Universidad.Util
             if (_planAcademicoRepository == null) _planAcademicoRepository = new PlanAcademicoRepository();
             if (_horarioClaseRepository == null) _horarioClaseRepository = new HorarioClaseRepository();
             if (_contratoRepository == null) _contratoRepository = new ContratoRepository();
+            if (_inscripcionRepository == null) _inscripcionRepository = new InscripcionRepository(_materiaRepository, _profesorRepository);
             if (_estudianteRepository == null) _estudianteRepository = new EstudianteRepository(_profesorRepository);
 
             EnsureSeeds();
@@ -166,6 +148,15 @@ namespace Universidad.Util
             return new EstudianteService(repo);
         }
 
+        public static InscripcionService InitInscripcionService()
+        {
+            HorarioClaseRepository horarioRepo = GetHorarioClaseRepository();
+            MateriaRepository materiaRepo = GetMateriaRepository();
+            InscripcionRepository inscripcionRepo = GetInscripcionRepository();
+            ProfesorRepository profesorRepo = GetProfesorRepository();
+            return new InscripcionService(horarioRepo, materiaRepo, inscripcionRepo, profesorRepo);
+        }
+
         public static PlanillaService InitPlanillaService()
         {
             HorarioClaseRepository horarioRepo = GetHorarioClaseRepository();
@@ -193,8 +184,10 @@ namespace Universidad.Util
         {
             IConsoleWriter writer = consoleWriter ?? InitConsoleWriter();
             Estudiante estudiante = estudianteActual ?? new Estudiante();
+            InscripcionService inscripcionService = InitInscripcionService();
+            ProfesorRepository profesorRepo = GetProfesorRepository();
 
-            return new EstudianteController(estudiante, writer);
+            return new EstudianteController(estudiante, inscripcionService, profesorRepo, writer);
         }
 
         public static AdministradorController InitAdministradorController(

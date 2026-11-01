@@ -35,7 +35,8 @@ namespace Universidad.Data
             MateriaRepository? materiaRepository = null,
             PlanAcademicoRepository? planRepository = null,
             HorarioClaseRepository? horarioRepository = null,
-            ContratoRepository? contratoRepository = null)
+            ContratoRepository? contratoRepository = null,
+            InscripcionRepository? inscripcionRepository = null)
         {
             if (administradorRepository != null && administradorRepository.GetAll().Count == 0)
             {
@@ -111,16 +112,11 @@ namespace Universidad.Data
                 Grupo grupo = new Grupo(
                     idGrupo: "G01",
                     nombreGrupo: "Grupo ISI-IIIB",
-                    materia: "Desarrollo de Aplicaciones III",
-                    cupos: 30,
+                    carrera: "Ingenieria en Sistemas",
+                    anioAcademico: 3,
                     semestre: 1,
                     modalidad: Modalidad.Regular,
-                    dia: "Lunes",
-                    horaInicio: new TimeSpan(8, 0, 0),
-                    horaFin: new TimeSpan(11, 0, 0),
-                    profesorAsignado: profesor,
-                    carrera: "Ingenieria en Sistemas",
-                    anioAcademico: 3
+                    cupos: 30
                 );
 
                 profesorRepository.AddGrupo(grupo);
@@ -145,7 +141,29 @@ namespace Universidad.Data
                     estudianteRepository.Add(estudiante);
                     grupo.AgregarEstudiante(estudiante);
 
-                    Calificacion calificacion = new Calificacion(estudiante, grupo);
+                    // Materia previa aprobada (Prerrequisito SIS201 - POO)
+                    Materia materiaPOO = materiaRepository?.ObtenerPorCodigo("SIS201")
+                        ?? new Materia("SIS201", "Programacion Orientada a Objetos");
+
+                    Grupo grupoAnterior = new Grupo(
+                        idGrupo: "G00",
+                        nombreGrupo: "Grupo ISI-IIA",
+                        carrera: "Ingenieria en Sistemas",
+                        anioAcademico: 2,
+                        semestre: 1,
+                        modalidad: Modalidad.Regular,
+                        cupos: 30
+                    );
+                    grupoAnterior.AgregarEstudiante(estudiante);
+
+                    Calificacion calificacionPrevia = new Calificacion(estudiante, grupoAnterior, materiaPOO);
+                    calificacionPrevia.RegistrarNotas(50, 35); // 85 / 100 -> Aprobado
+                    profesorRepository.AddCalificacion(calificacionPrevia);
+
+                    Materia materiaDesaInicial = materiaRepository?.ObtenerPorCodigo("SIS301") 
+                        ?? new Materia("SIS301", "Desarrollo de Aplicaciones III");
+
+                    Calificacion calificacion = new Calificacion(estudiante, grupo, materiaDesaInicial);
                     profesorRepository.AddCalificacion(calificacion);
                 }
             }
@@ -178,6 +196,18 @@ namespace Universidad.Data
                 }
 
                 horarioRepository.Add(horario);
+
+                if (inscripcionRepository != null && inscripcionRepository.ObtenerTodas().Count == 0 && estudianteRepository.GetAll().Count > 0)
+                {
+                    try
+                    {
+                        inscripcionRepository.Inscribir(estudianteRepository.GetAll()[0], horario, "2026-I");
+                    }
+                    catch
+                    {
+                        // En caso de que ya estuviese matriculado
+                    }
+                }
             }
 
             // Semilla de Contrato

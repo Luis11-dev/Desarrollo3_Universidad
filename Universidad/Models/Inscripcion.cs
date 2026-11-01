@@ -1,37 +1,60 @@
-
 using System;
 
 namespace Universidad.Models
 {
     public class Inscripcion
     {
-        public string IdInscripcion { get; private set; }
-        public Estudiante Estudiante { get; private set; }
-        public Grupo Grupo { get; private set; }
-        public string PeriodoAcademico { get; private set; }
+        public string IdInscripcion { get; private set; } = string.Empty;
+        public Estudiante Estudiante { get; private set; } = null!;
+        public HorarioClase Horario { get; private set; } = null!;
+
+        public Grupo Grupo
+        {
+            get
+            {
+                return Horario.Grupo;
+            }
+        }
+
+        public Materia Materia
+        {
+            get
+            {
+                return Horario.Materia;
+            }
+        }
+
+        public string PeriodoAcademico { get; private set; } = string.Empty;
         public DateTime FechaInscripcion { get; private set; }
+
+        public Inscripcion() { }
 
         public Inscripcion(
             string idInscripcion,
             Estudiante estudiante,
-            Grupo grupo,
+            HorarioClase horario,
             string periodoAcademico)
         {
             if (string.IsNullOrWhiteSpace(idInscripcion))
-                throw new ArgumentException("El identificador es obligatorio.");
-
+            {
+                throw new ArgumentException("El identificador es obligatorio.", nameof(idInscripcion));
+            }
             if (estudiante == null)
+            {
                 throw new ArgumentNullException(nameof(estudiante));
-
-            if (grupo == null)
-                throw new ArgumentNullException(nameof(grupo));
-
+            }
+            if (horario == null)
+            {
+                throw new ArgumentNullException(nameof(horario));
+            }
             if (string.IsNullOrWhiteSpace(periodoAcademico))
-                throw new ArgumentException("El período académico es obligatorio.");
+            {
+                throw new ArgumentException("El periodo academico es obligatorio.", nameof(periodoAcademico));
+            }
 
-            IdInscripcion = idInscripcion;
+            IdInscripcion = idInscripcion.Trim();
             Estudiante = estudiante;
-            Grupo = grupo;
+            Horario = horario;
             PeriodoAcademico = periodoAcademico.Trim();
             FechaInscripcion = DateTime.Now;
         }

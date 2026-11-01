@@ -246,7 +246,7 @@ namespace Universidad.Commands.Administrador
                 // Inscribir a los estudiantes del grupo que correspondan
                 foreach (PerfilUniversitario estudiantePerfil in grupoSeleccionado.Estudiantes)
                 {
-                    if (estudiantePerfil is Estudiante estudiante)
+                    if (estudiantePerfil is Models.Estudiante estudiante)
                     {
                         nuevoHorario.InscribirEstudiante(estudiante);
                     }

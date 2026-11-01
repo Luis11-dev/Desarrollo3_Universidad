@@ -104,7 +104,7 @@ namespace Universidad.Commands.Administrador
                     .PasswordSegura("La contrasenia debe tener al menos 8 caracteres e incluir mayuscula, minuscula, numero y caracter especial.")
                     .ReadAndValidate();
 
-                Estudiante nuevoEstudiante = _estudianteService.RegistrarEstudiante(
+                Models.Estudiante nuevoEstudiante = _estudianteService.RegistrarEstudiante(
                     cedula,
                     nombre,
                     fechaNacimiento,
