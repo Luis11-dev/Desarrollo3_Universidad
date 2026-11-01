@@ -1,4 +1,5 @@
 using Universidad.Models;
+using Universidad.ProfesorExceptions;
 using Universidad.Repositories;
 using System;
 using System.Collections.Generic;
@@ -34,7 +35,7 @@ namespace Universidad.Services
         {
             if (usuarioActual == null || usuarioActual.Rol != Rol.Profesor)
             {
-                throw new UnauthorizedAccessException("Acceso denegado: El usuario actual no tiene permisos de Profesor.");
+                throw new AccesoDenegadoProfesorException();
             }
         }
 
@@ -218,7 +219,7 @@ namespace Universidad.Services
 
             if (!asignado)
             {
-                throw new UnauthorizedAccessException("Acceso denegado: Solo puede ver y calificar grupos en los que imparte materias.");
+                throw new GrupoNoAsignadoException();
             }
 
             return grupo;
@@ -248,8 +249,7 @@ namespace Universidad.Services
         {
             if (_profesorRepository.FechaTopeNotas.HasValue && DateTime.Now > _profesorRepository.FechaTopeNotas.Value)
             {
-                throw new InvalidOperationException(
-                    $"La fecha tope para el registro de calificaciones ({_profesorRepository.FechaTopeNotas.Value:dd/MM/yyyy}) ya vencio.");
+                throw new FechaTopeVencidaException(_profesorRepository.FechaTopeNotas.Value);
             }
         }
 
@@ -279,12 +279,12 @@ namespace Universidad.Services
         {
             if (acumulado < 0 || acumulado > 60)
             {
-                throw new ArgumentOutOfRangeException(nameof(acumulado), "El acumulado debe estar en el rango de 0 a 60 puntos.");
+                throw new NotaFueraDeRangoException("Acumulado", 0, 60);
             }
 
             if (examen < 0 || examen > 40)
             {
-                throw new ArgumentOutOfRangeException(nameof(examen), "El examen debe estar en el rango de 0 a 40 puntos.");
+                throw new NotaFueraDeRangoException("Examen", 0, 40);
             }
         }
 
@@ -303,8 +303,7 @@ namespace Universidad.Services
 
             if (calificacion.Nota != null || calificacion.Estado != EstadoCalificacion.Pendiente)
             {
-                throw new InvalidOperationException(
-                    $"El estudiante '{calificacion.Estudiante?.Nombre}' ya tiene una nota registrada y no se puede editar.");
+                throw new CalificacionYaRegistradaException(calificacion.Estudiante?.Nombre ?? "Estudiante");
             }
 
             calificacion.RegistrarNotas(acumulado, examen);
@@ -330,7 +329,7 @@ namespace Universidad.Services
 
             if (notaExtraordinaria < 0 || notaExtraordinaria > 100)
             {
-                throw new ArgumentOutOfRangeException(nameof(notaExtraordinaria), "La nota extraordinaria debe estar en una escala de 0 a 100.");
+                throw new NotaFueraDeRangoException("Convocatoria", 0, 100);
             }
 
             Calificacion? calificacion = _profesorRepository.GetCalificacion(grupo.IdGrupo, cedulaEstudiante);
@@ -341,12 +340,12 @@ namespace Universidad.Services
 
             if (calificacion.NotaConvocatoria != null)
             {
-                throw new InvalidOperationException("El estudiante ya realizo su unica convocatoria para esta clase y no se puede editar.");
+                throw new ConvocatoriaNoPermitidaException("El estudiante ya realizo su unica convocatoria para esta clase y no se puede editar.");
             }
 
             if (calificacion.Estado != EstadoCalificacion.ReprobadoConConvocatoria)
             {
-                throw new InvalidOperationException("El estudiante no tiene derecho a convocatoria (su nota final debe estar entre 40 y 59).");
+                throw new ConvocatoriaNoPermitidaException("El estudiante no tiene derecho a convocatoria (su nota final debe estar entre 40 y 59).");
             }
 
             calificacion.RegistrarConvocatoria(notaExtraordinaria);
@@ -362,14 +361,14 @@ namespace Universidad.Services
 
             if (horaEntrada < horaInicio)
             {
-                throw new InvalidOperationException(
-                    $"Aun no inicia la materia. La hora de inicio es {horaInicio:hh\\:mm}.");
+                throw new AsistenciaFueraDeTiempoException(
+                    $"Aun no inicia la clase. La hora de inicio es {horaInicio:hh\\:mm}.");
             }
 
             if (horaEntrada > horaLimite)
             {
-                throw new InvalidOperationException(
-                    $"Tiempo limite excedido: La materia inicia a las {horaInicio:hh\\:mm} y el limite de 15 minutos vencio a las {horaLimite:hh\\:mm}. Ya no puede marcar asistencia.");
+                throw new AsistenciaFueraDeTiempoException(
+                    $"Tiempo limite excedido: La clase inicia a las {horaInicio:hh\\:mm} y el limite de 15 minutos vencio a las {horaLimite:hh\\:mm}. Ya no puede marcar asistencia.");
             }
 
             AsistenciaProfesor asistencia = new AsistenciaProfesor(profesor, horario, fecha, horaEntrada, asistio: true);
