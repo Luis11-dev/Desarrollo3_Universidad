@@ -14,6 +14,7 @@ namespace Universidad.Util
         private static MateriaRepository? _materiaRepository;
         private static PlanAcademicoRepository? _planAcademicoRepository;
         private static HorarioClaseRepository? _horarioClaseRepository;
+        private static ContratoRepository? _contratoRepository;
         private static IConsoleWriter? _consoleWriter;
         private static bool _seedsLoaded = false;
 
@@ -34,7 +35,8 @@ namespace Universidad.Util
                 _administradorRepository != null &&
                 _materiaRepository != null &&
                 _planAcademicoRepository != null &&
-                _horarioClaseRepository != null)
+                _horarioClaseRepository != null &&
+                _contratoRepository != null)
             {
                 _seedsLoaded = true;
                 Seeds.Inicializar(
@@ -43,7 +45,8 @@ namespace Universidad.Util
                     _administradorRepository,
                     _materiaRepository,
                     _planAcademicoRepository,
-                    _horarioClaseRepository
+                    _horarioClaseRepository,
+                    _contratoRepository
                 );
             }
         }
@@ -108,6 +111,16 @@ namespace Universidad.Util
             return _horarioClaseRepository;
         }
 
+        public static ContratoRepository GetContratoRepository()
+        {
+            if (_contratoRepository == null)
+            {
+                _contratoRepository = new ContratoRepository();
+            }
+            EnsureAllRepositories();
+            return _contratoRepository;
+        }
+
         private static void EnsureAllRepositories()
         {
             if (_profesorRepository == null) _profesorRepository = new ProfesorRepository();
@@ -115,6 +128,7 @@ namespace Universidad.Util
             if (_materiaRepository == null) _materiaRepository = new MateriaRepository();
             if (_planAcademicoRepository == null) _planAcademicoRepository = new PlanAcademicoRepository();
             if (_horarioClaseRepository == null) _horarioClaseRepository = new HorarioClaseRepository();
+            if (_contratoRepository == null) _contratoRepository = new ContratoRepository();
             if (_estudianteRepository == null) _estudianteRepository = new EstudianteRepository(_profesorRepository);
 
             EnsureSeeds();
@@ -133,10 +147,17 @@ namespace Universidad.Util
             return new AuthController(authService, writer, maxIntentos);
         }
 
-        public static ProfesorService InitProfesorService(ProfesorRepository? profesorRepository = null)
+        public static ProfesorService InitProfesorService(
+            ProfesorRepository? profesorRepository = null,
+            HorarioClaseRepository? horarioClaseRepository = null,
+            ContratoRepository? contratoRepository = null,
+            PlanillaService? planillaService = null)
         {
             ProfesorRepository repo = profesorRepository ?? GetProfesorRepository();
-            return new ProfesorService(repo);
+            HorarioClaseRepository horarioRepo = horarioClaseRepository ?? GetHorarioClaseRepository();
+            ContratoRepository contratoRepo = contratoRepository ?? GetContratoRepository();
+            PlanillaService planilla = planillaService ?? InitPlanillaService();
+            return new ProfesorService(repo, horarioRepo, contratoRepo, planilla);
         }
 
         public static EstudianteService InitEstudianteService(EstudianteRepository? estudianteRepository = null)
@@ -149,7 +170,8 @@ namespace Universidad.Util
         {
             HorarioClaseRepository horarioRepo = GetHorarioClaseRepository();
             ProfesorRepository profesorRepo = GetProfesorRepository();
-            return new PlanillaService(horarioRepo, profesorRepo);
+            ContratoRepository contratoRepo = GetContratoRepository();
+            return new PlanillaService(horarioRepo, profesorRepo, contratoRepo);
         }
 
         public static ProfesorController InitProfesorController(
@@ -198,7 +220,8 @@ namespace Universidad.Util
                 materiaRepo,
                 planillaService,
                 writer,
-                admin
+                admin,
+                GetContratoRepository()
             );
         }
     }

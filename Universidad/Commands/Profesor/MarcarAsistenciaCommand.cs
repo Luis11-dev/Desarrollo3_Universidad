@@ -22,42 +22,42 @@ namespace Universidad.Commands.Profesor
         public void Execute()
         {
             _writer.Clear();
-            _writer.ShowHeader("REGISTRO DE ASISTENCIA A CLASE");
+            _writer.ShowHeader("REGISTRO DE ASISTENCIA A MATERIA");
 
             try
             {
-                List<Grupo> grupos = _profesorService.ObtenerGruposAsignados(_profesorActual);
-                if (grupos.Count == 0)
+                List<HorarioClase> materias = _profesorService.ObtenerMateriasAsignadas(_profesorActual);
+                if (materias.Count == 0)
                 {
-                    _writer.ShowMessage("\nNo tiene grupos asignados para marcar asistencia.");
+                    _writer.ShowMessage("\nNo tiene materias asignadas para marcar asistencia.");
                     _writer.WaitForKey();
                     return;
                 }
 
-                string[] opcionesGrupos = new string[grupos.Count + 1];
-                for (int i = 0; i < grupos.Count; i++)
+                string[] opcionesMaterias = new string[materias.Count + 1];
+                for (int i = 0; i < materias.Count; i++)
                 {
-                    var g = grupos[i];
-                    opcionesGrupos[i] = $"{g.NombreMateria} (Grupo: {g.NombreGrupo} | {g.Dia} de {g.HoraInicio:hh\\:mm} a {g.HoraFin:hh\\:mm})";
+                    var m = materias[i];
+                    opcionesMaterias[i] = $"{m.Materia.Nombre} (Grupo: {m.Grupo.NombreGrupo} | {m.Dia} de {m.HoraInicio:hh\\:mm} a {m.HoraFin:hh\\:mm})";
                 }
-                opcionesGrupos[grupos.Count] = "Volver al menu anterior";
+                opcionesMaterias[materias.Count] = "Volver al menu anterior";
 
-                _writer.DisplayMenu("Seleccione el grupo de la clase:", opcionesGrupos);
+                _writer.DisplayMenu("Seleccione la materia para gestionar asistencia:", opcionesMaterias);
 
-                string inputGrupo = new Validator("Ingrese su opcion: ")
+                string inputMateria = new Validator("Ingrese su opcion: ")
                     .NotEmpty()
                     .OnlyDigits()
-                    .InputBetweenXandY(1, grupos.Count + 1)
+                    .InputBetweenXandY(1, materias.Count + 1)
                     .ReadAndValidate();
 
-                int indiceGrupo = int.Parse(inputGrupo) - 1;
-                if (indiceGrupo == grupos.Count)
+                int indiceMateria = int.Parse(inputMateria) - 1;
+                if (indiceMateria == materias.Count)
                 {
                     return;
                 }
 
-                Grupo grupoSeleccionado = grupos[indiceGrupo];
-                ProcesarAsistenciaGrupo(grupoSeleccionado);
+                HorarioClase materiaSeleccionada = materias[indiceMateria];
+                ProcesarAsistenciaMateria(materiaSeleccionada);
             }
             catch (Exception ex)
             {
@@ -66,21 +66,21 @@ namespace Universidad.Commands.Profesor
             }
         }
 
-        private void ProcesarAsistenciaGrupo(Grupo grupo)
+        private void ProcesarAsistenciaMateria(HorarioClase horario)
         {
-            TimeSpan horaLimite = grupo.HoraInicio.Add(TimeSpan.FromMinutes(ProfesorService.MinutosToleranciaAsistencia));
+            TimeSpan horaLimite = horario.HoraInicio.Add(TimeSpan.FromMinutes(ProfesorService.MinutosToleranciaAsistencia));
 
             _writer.Clear();
-            _writer.ShowHeader($"ASISTENCIA - {grupo.NombreMateria.ToUpper()} (GRUPO {grupo.NombreGrupo})");
-            _writer.ShowMessage($"Dia de clase:              {grupo.Dia}");
-            _writer.ShowMessage($"Hora de inicio:            {grupo.HoraInicio:hh\\:mm}");
+            _writer.ShowHeader($"ASISTENCIA - {horario.Materia.Nombre.ToUpper()} (GRUPO {horario.Grupo.NombreGrupo})");
+            _writer.ShowMessage($"Dia de materia:            {horario.Dia}");
+            _writer.ShowMessage($"Hora de inicio:            {horario.HoraInicio:hh\\:mm}");
             _writer.ShowMessage($"Hora limite (15 min):      {horaLimite:hh\\:mm}");
-            _writer.ShowMessage($"Hora de finalizacion:      {grupo.HoraFin:hh\\:mm} ({grupo.ObtenerHorasPorSesion()} h por sesion)\n");
+            _writer.ShowMessage($"Hora de finalizacion:      {horario.HoraFin:hh\\:mm} ({horario.HorasPorSesion} h por sesion)\n");
 
             _writer.DisplayMenu(
                 "Seleccione la accion a realizar:",
                 "Simular hora de entrada y marcar asistencia",
-                "Registrar como ausencia (No asistio a la clase)",
+                "Registrar como ausencia (No asistio a la materia)",
                 "Cancelar y volver"
             );
 
@@ -98,17 +98,17 @@ namespace Universidad.Commands.Profesor
 
             if (accion == 1)
             {
-                FlujoSimularHoraEntrada(grupo, horaLimite);
+                FlujoSimularHoraEntrada(horario, horaLimite);
             }
             else if (accion == 2)
             {
-                FlujoRegistrarAusencia(grupo);
+                FlujoRegistrarAusencia(horario);
             }
         }
 
-        private void FlujoSimularHoraEntrada(Grupo grupo, TimeSpan horaLimite)
+        private void FlujoSimularHoraEntrada(HorarioClase horario, TimeSpan horaLimite)
         {
-            string inputHora = new ValidatorProfesor($"\nIngrese la hora de entrada (formato HH:mm, ej. {grupo.HoraInicio:hh\\:mm}): ")
+            string inputHora = new ValidatorProfesor($"\nIngrese la hora de entrada (formato HH:mm, ej. {horario.HoraInicio:hh\\:mm}): ")
                 .NotEmpty()
                 .FormatoHora24h()
                 .ReadAndValidate();
@@ -120,8 +120,8 @@ namespace Universidad.Commands.Profesor
             {
                 _writer.Clear();
                 _writer.ShowHeader("CONFIRMACION DE MARCAJE DE ASISTENCIA");
-                _writer.ShowMessage($"Grupo:                  {grupo.NombreGrupo} - {grupo.NombreMateria}");
-                _writer.ShowMessage($"Horario oficial:        {grupo.HoraInicio:hh\\:mm} (Limite permitido: {horaLimite:hh\\:mm})");
+                _writer.ShowMessage($"Materia:                {horario.Materia.Nombre} (Grupo: {horario.Grupo.NombreGrupo})");
+                _writer.ShowMessage($"Horario oficial:        {horario.HoraInicio:hh\\:mm} (Limite permitido: {horaLimite:hh\\:mm})");
                 _writer.ShowMessage($"Hora de entrada:        {horaEnEspera:hh\\:mm}");
                 _writer.ShowMessage(new string('-', 60));
 
@@ -143,7 +143,7 @@ namespace Universidad.Commands.Profesor
                     case 1:
                         try
                         {
-                            _profesorService.MarcarAsistencia(_profesorActual, grupo.IdGrupo, DateTime.Today, horaEnEspera);
+                            _profesorService.MarcarAsistencia(_profesorActual, horario.IdHorario, DateTime.Today, horaEnEspera);
                             _writer.ShowMessage($"\nAsistencia registrada correctamente a las {horaEnEspera:hh\\:mm}.");
                         }
                         catch (Exception ex)
@@ -171,16 +171,18 @@ namespace Universidad.Commands.Profesor
             }
         }
 
-        private void FlujoRegistrarAusencia(Grupo grupo)
+        private void FlujoRegistrarAusencia(HorarioClase horario)
         {
-            int horasClase = grupo.ObtenerHorasPorSesion();
-            decimal descuentoClase = horasClase * ProfesorService.TarifaPorHora;
+            int horasSesion = horario.HorasPorSesion;
+            decimal tarifaHora = _profesorService.ObtenerContratoVigente(_profesorActual)?.TarifaPorHora 
+                ?? ProfesorService.TarifaPorHoraDefault;
+            decimal descuentoMateria = horasSesion * tarifaHora;
 
             _writer.Clear();
             _writer.ShowHeader("CONFIRMACION DE REGISTRO DE AUSENCIA");
-            _writer.ShowMessage($"Grupo:                  {grupo.NombreGrupo} - {grupo.NombreMateria}");
-            _writer.ShowMessage($"Horas de la sesion:     {horasClase} hora(s)");
-            _writer.ShowMessage($"Descuento en planilla:  {descuentoClase:N2} ({ProfesorService.TarifaPorHora} por hora)");
+            _writer.ShowMessage($"Materia:                {horario.Materia.Nombre} (Grupo: {horario.Grupo.NombreGrupo})");
+            _writer.ShowMessage($"Horas de la sesion:     {horasSesion} hora(s)");
+            _writer.ShowMessage($"Descuento estimado:     C$ {descuentoMateria:N2} (a C$ {tarifaHora:N2}/h)");
             _writer.ShowMessage(new string('-', 60));
 
             _writer.DisplayMenu(
@@ -199,8 +201,8 @@ namespace Universidad.Commands.Profesor
             {
                 try
                 {
-                    _profesorService.RegistrarAusencia(_profesorActual, grupo.IdGrupo, DateTime.Today);
-                    _writer.ShowMessage("\nSe registro la ausencia a la clase.");
+                    _profesorService.RegistrarAusencia(_profesorActual, horario.IdHorario, DateTime.Today);
+                    _writer.ShowMessage("\nSe registro la ausencia a la materia.");
                 }
                 catch (Exception ex)
                 {

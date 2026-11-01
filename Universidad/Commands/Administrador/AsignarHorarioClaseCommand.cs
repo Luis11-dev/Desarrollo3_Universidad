@@ -15,6 +15,7 @@ namespace Universidad.Commands.Administrador
         private readonly HorarioClaseRepository _horarioRepository;
         private readonly PlanAcademicoRepository _planRepository;
         private readonly MateriaRepository _materiaRepository;
+        private readonly ContratoRepository? _contratoRepository;
         private readonly IConsoleWriter _writer;
 
         public AsignarHorarioClaseCommand(
@@ -22,13 +23,15 @@ namespace Universidad.Commands.Administrador
             HorarioClaseRepository horarioRepository,
             PlanAcademicoRepository planRepository,
             MateriaRepository materiaRepository,
-            IConsoleWriter writer)
+            IConsoleWriter writer,
+            ContratoRepository? contratoRepository = null)
         {
             _profesorRepository = profesorRepository ?? throw new ArgumentNullException(nameof(profesorRepository));
             _horarioRepository = horarioRepository ?? throw new ArgumentNullException(nameof(horarioRepository));
             _planRepository = planRepository ?? throw new ArgumentNullException(nameof(planRepository));
             _materiaRepository = materiaRepository ?? throw new ArgumentNullException(nameof(materiaRepository));
             _writer = writer ?? throw new ArgumentNullException(nameof(writer));
+            _contratoRepository = contratoRepository;
         }
 
         public void Execute()
@@ -250,6 +253,15 @@ namespace Universidad.Commands.Administrador
                 }
 
                 _horarioRepository.Add(nuevoHorario);
+
+                if (_contratoRepository != null)
+                {
+                    Contrato? contrato = _contratoRepository.GetContratoActivo(profesorSeleccionado.Cedula);
+                    if (contrato != null)
+                    {
+                        contrato.AsignarMateria(nuevoHorario);
+                    }
+                }
 
                 _writer.ShowMessage("\nAsignacion de horario guardada exitosamente.");
                 _writer.ShowMessage($"ID Horario: {nuevoHorario.IdHorario}");

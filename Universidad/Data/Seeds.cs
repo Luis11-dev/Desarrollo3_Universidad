@@ -34,7 +34,8 @@ namespace Universidad.Data
             AdministradorRepository? administradorRepository = null,
             MateriaRepository? materiaRepository = null,
             PlanAcademicoRepository? planRepository = null,
-            HorarioClaseRepository? horarioRepository = null)
+            HorarioClaseRepository? horarioRepository = null,
+            ContratoRepository? contratoRepository = null)
         {
             if (administradorRepository != null && administradorRepository.GetAll().Count == 0)
             {
@@ -177,6 +178,27 @@ namespace Universidad.Data
                 }
 
                 horarioRepository.Add(horario);
+            }
+
+            // Semilla de Contrato
+            if (contratoRepository != null && contratoRepository.GetAll().Count == 0 && profesorActual != null)
+            {
+                Contrato contrato = new Contrato(
+                    idContrato: "CTR-2026-001",
+                    profesor: profesorActual,
+                    periodoAcademico: "2026-I",
+                    tarifaPorHora: 400m
+                );
+
+                if (horarioRepository != null)
+                {
+                    foreach (HorarioClase h in horarioRepository.GetByProfesor(profesorActual.Cedula))
+                    {
+                        contrato.AsignarMateria(h);
+                    }
+                }
+
+                contratoRepository.Add(contrato);
             }
         }
     }

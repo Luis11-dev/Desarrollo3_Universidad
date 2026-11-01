@@ -83,7 +83,7 @@ namespace Universidad.Commands.Profesor.Calificaciones
 
                     _writer.Clear();
                     _writer.ShowHeader("VISTA PREVIA Y CONFIRMACION DE CONVOCATORIA");
-                    _writer.ShowMessage($"Grupo:                        {_grupo.NombreGrupo} - {_grupo.NombreMateria}");
+                    _writer.ShowMessage($"Grupo:                        {_grupo.NombreGrupo} ({_grupo.Carrera})");
                     _writer.ShowMessage($"Estudiante:                   {estudiante.Nombre} ({estudiante.Cedula})");
                     _writer.ShowMessage($"Nota Ordinaria Previa:        {calificacionSeleccionada.Nota}");
                     _writer.ShowMessage(new string('-', 65));

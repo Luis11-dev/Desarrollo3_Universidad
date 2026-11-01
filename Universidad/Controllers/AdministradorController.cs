@@ -30,7 +30,8 @@ namespace Universidad.Controllers
             MateriaRepository materiaRepository,
             PlanillaService planillaService,
             IConsoleWriter writer,
-            Administrador adminActual)
+            Administrador adminActual,
+            ContratoRepository? contratoRepository = null)
         {
             _profesorService = profesorService ?? throw new ArgumentNullException(nameof(profesorService));
             _estudianteService = estudianteService ?? throw new ArgumentNullException(nameof(estudianteService));
@@ -46,7 +47,7 @@ namespace Universidad.Controllers
             {
                 { 1, new RegistrarProfesorCommand(_profesorService, _writer) },
                 { 2, new RegistrarEstudianteCommand(_estudianteService, _profesorRepository, _writer) },
-                { 3, new AsignarHorarioClaseCommand(_profesorRepository, _horarioRepository, _planRepository, _materiaRepository, _writer) },
+                { 3, new AsignarHorarioClaseCommand(_profesorRepository, _horarioRepository, _planRepository, _materiaRepository, _writer, contratoRepository) },
                 { 4, new PrepararPlanillaCommand(_planillaService, _writer) }
             };
         }

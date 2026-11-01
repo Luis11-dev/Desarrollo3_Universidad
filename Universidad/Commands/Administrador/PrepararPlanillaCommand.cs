@@ -39,19 +39,19 @@ namespace Universidad.Commands.Administrador
                 foreach (PlanillaProfesor p in planillas)
                 {
                     _writer.ShowMessage("--------------------------------------------------------------------------------");
-                    _writer.ShowMessage($"Profesor: {p.Profesor.Nombre} | Cedula: {p.Profesor.Cedula} | Profesion: {p.Profesor.Profesion}");
-                    _writer.ShowMessage($"Clases Asignadas: {p.HorariosAsignados.Count}");
+                    _writer.ShowMessage($"Profesor: {p.Profesor.Nombre} | Cedula: {p.Profesor.Cedula} | Contrato: {(p.Contrato != null ? p.Contrato.IdContrato : "Sin contrato")}");
+                    _writer.ShowMessage($"Materias Asignadas: {p.MateriasAsignadas.Count}");
 
-                    if (p.HorariosAsignados.Count > 0)
+                    if (p.MateriasAsignadas.Count > 0)
                     {
-                        foreach (HorarioClase h in p.HorariosAsignados)
+                        foreach (HorarioClase h in p.MateriasAsignadas)
                         {
                             _writer.ShowMessage($"  • [{h.Materia.Codigo}] {h.Materia.Nombre} | Grupo: {h.Grupo.NombreGrupo} | {h.Dia} {h.HoraInicio:hh\\:mm}-{h.HoraFin:hh\\:mm} ({h.Modalidad}) -> {h.HorasMensuales}h/mes");
                         }
                     }
                     else
                     {
-                        _writer.ShowMessage("  (Sin clases asignadas este periodo)");
+                        _writer.ShowMessage("  (Sin materias asignadas este periodo)");
                     }
 
                     _writer.ShowMessage($"Horas Contratadas al Mes: {p.HorasContratadasMes} hrs");

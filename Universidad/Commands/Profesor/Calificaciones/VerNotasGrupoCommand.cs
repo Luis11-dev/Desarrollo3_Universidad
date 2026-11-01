@@ -24,7 +24,7 @@ namespace Universidad.Commands.Profesor.Calificaciones
         public void Execute()
         {
             _writer.Clear();
-            _writer.ShowHeader($"LISTADO DE NOTAS - GRUPO {_grupo.NombreGrupo} ({_grupo.NombreMateria.ToUpper()})");
+            _writer.ShowHeader($"LISTADO DE NOTAS - GRUPO {_grupo.NombreGrupo} ({_grupo.Carrera.ToUpper()})");
 
             try
             {
@@ -48,7 +48,7 @@ namespace Universidad.Commands.Profesor.Calificaciones
                 return;
             }
 
-            _writer.ShowMessage($"\n--- LISTA DE NOTAS DEL GRUPO {_grupo.NombreGrupo} ({_grupo.NombreMateria}) ---");
+            _writer.ShowMessage($"\n--- LISTA DE NOTAS DEL GRUPO {_grupo.NombreGrupo} ({_grupo.Carrera}) ---");
             _writer.ShowMessage(string.Format(
                 "{0,-14} {1,-26} {2,-10} {3,-8} {4,-11} {5,-13} {6,-28}",
                 "CEDULA", "ESTUDIANTE", "ACUM(60)", "EXAM(40)", "FINAL(100)", "CONVOC(80)", "ESTADO"));
