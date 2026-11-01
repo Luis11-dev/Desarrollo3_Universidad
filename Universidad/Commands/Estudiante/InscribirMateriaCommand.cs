@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Universidad.Models;
 using Universidad.Services;
 using Universidad.Util;
@@ -30,8 +29,8 @@ namespace Universidad.Commands.Estudiante
 
             try
             {
-                string periodo = "2026-I";
-                List<HorarioClase> disponibles = _inscripcionService.ObtenerHorariosDisponibles(_estudianteActual, periodo);
+                // Obtenemos los horarios disponibles para el estudiante
+                List<HorarioClase> disponibles = _inscripcionService.ObtenerHorariosDisponibles(_estudianteActual, string.Empty);
 
                 if (disponibles.Count == 0)
                 {
@@ -64,10 +63,15 @@ namespace Universidad.Commands.Estudiante
 
                 HorarioClase materiaSeleccionada = disponibles[indice];
 
+                // El periodo se calcula dinamicamente segun el año actual y el semestre del grupo (I o II)
+                string semestreRomano = materiaSeleccionada.Grupo.Semestre == 1 ? "I" : "II";
+                string periodo = $"{DateTime.Now.Year}-{semestreRomano}";
+
                 _writer.Clear();
                 _writer.ShowHeader("CONFIRMAR MATRICULA DE ASIGNATURA");
+                _writer.ShowMessage($"Periodo Academico:   {periodo}");
                 _writer.ShowMessage($"Asignatura:          [{materiaSeleccionada.Materia.Codigo}] {materiaSeleccionada.Materia.Nombre}");
-                _writer.ShowMessage($"Grupo / Cohorte:     {materiaSeleccionada.Grupo.NombreGrupo} ({materiaSeleccionada.Grupo.Carrera})");
+                _writer.ShowMessage($"Grupo / Cohorte:     {materiaSeleccionada.Grupo.NombreGrupo} ({materiaSeleccionada.Grupo.Carrera} - Semestre {materiaSeleccionada.Grupo.Semestre})");
                 _writer.ShowMessage($"Horario de clases:   {materiaSeleccionada.Dia} de {materiaSeleccionada.HoraInicio:hh\\:mm} a {materiaSeleccionada.HoraFin:hh\\:mm} ({materiaSeleccionada.Modalidad})");
                 _writer.ShowMessage($"Profesor:            {materiaSeleccionada.Profesor.Nombre}");
                 _writer.ShowMessage(new string('-', 60));
@@ -116,4 +120,3 @@ namespace Universidad.Commands.Estudiante
         }
     }
 }
-

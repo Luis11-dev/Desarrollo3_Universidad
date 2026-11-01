@@ -219,6 +219,8 @@ namespace Universidad.Commands.Administrador
                     return;
                 }
 
+                grupoSeleccionado.AsignarModalidad(modalidad);
+
                 string idHorario = "H" + (_horarioRepository.GetAll().Count + 1).ToString("D2");
                 HorarioClase nuevoHorario = new HorarioClase(
                     idHorario,
@@ -231,23 +233,20 @@ namespace Universidad.Commands.Administrador
                     modalidad
                 );
 
-                foreach (PerfilUniversitario estudiantePerfil in grupoSeleccionado.Estudiantes)
-                {
-                    if (estudiantePerfil is Models.Estudiante estudiante)
-                    {
-                        nuevoHorario.InscribirEstudiante(estudiante);
-                    }
-                }
-
                 _horarioRepository.Add(nuevoHorario);
 
                 if (_contratoRepository != null)
                 {
                     Contrato? contrato = _contratoRepository.GetContratoActivo(profesorSeleccionado.Cedula);
-                    if (contrato != null)
+                    if (contrato == null)
                     {
-                        contrato.AsignarMateria(nuevoHorario);
+                        string idContrato = $"CTR-{Guid.NewGuid().ToString().Substring(0, 8).ToUpper()}";
+                        string semestreRomano = grupoSeleccionado.Semestre == 1 ? "I" : "II";
+                        string periodoActual = $"{DateTime.Now.Year}-{semestreRomano}";
+                        contrato = new Contrato(idContrato, profesorSeleccionado, periodoActual, tarifaPorHora: 400m);
+                        _contratoRepository.Add(contrato);
                     }
+                    contrato.AsignarMateria(nuevoHorario);
                 }
 
                 _writer.ShowMessage("\nAsignacion de horario guardada exitosamente.");

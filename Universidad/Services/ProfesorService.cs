@@ -225,16 +225,40 @@ namespace Universidad.Services
             return grupo;
         }
 
+        private void SincronizarCalificacionesDeGrupo(Profesor profesor, Grupo grupo)
+        {
+            var horariosDelProfesor = _horarioRepository.GetByProfesor(profesor.Cedula)
+                .Where(h => h.Grupo != null && h.Grupo.IdGrupo.Equals(grupo.IdGrupo, StringComparison.OrdinalIgnoreCase));
+
+            foreach (var horario in horariosDelProfesor)
+            {
+                foreach (var estudiante in horario.EstudiantesInscritos)
+                {
+                    if (_profesorRepository.GetCalificacion(grupo.IdGrupo, estudiante.Cedula) == null)
+                    {
+                        _profesorRepository.AddCalificacion(new Calificacion(estudiante, grupo, horario.Materia));
+                    }
+                }
+            }
+        }
+
         public IReadOnlyCollection<PerfilUniversitario> VerEstudiantesDeGrupo(Profesor profesor, string idGrupo)
         {
             Grupo grupo = ObtenerYValidarGrupoDelProfesor(profesor, idGrupo);
-            return grupo.Estudiantes;
+            var inscritos = _horarioRepository.GetByProfesor(profesor.Cedula)
+                .Where(h => h.Grupo != null && h.Grupo.IdGrupo.Equals(grupo.IdGrupo, StringComparison.OrdinalIgnoreCase))
+                .SelectMany(h => h.EstudiantesInscritos)
+                .Cast<PerfilUniversitario>()
+                .DistinctBy(e => e.Cedula)
+                .ToList();
+            return inscritos.AsReadOnly();
         }
 
         // 2. Ver las notas de los estudiantes de su grupo + Resumen
         public (List<Calificacion> Calificaciones, int Aprobados, int ReprobadosConConvocatoria, int ReprobadosSinDerecho) VerNotasDeGrupo(Profesor profesor, string idGrupo)
         {
             Grupo grupo = ObtenerYValidarGrupoDelProfesor(profesor, idGrupo);
+            SincronizarCalificacionesDeGrupo(profesor, grupo);
             List<Calificacion> calificaciones = _profesorRepository.GetCalificacionesByGrupo(grupo.IdGrupo);
 
             int aprobados = calificaciones.Count(c => c.Estado == EstadoCalificacion.Aprobado);
@@ -258,6 +282,7 @@ namespace Universidad.Services
         {
             Grupo grupo = ObtenerYValidarGrupoDelProfesor(profesor, idGrupo);
             ValidarFechaTope();
+            SincronizarCalificacionesDeGrupo(profesor, grupo);
 
             return _profesorRepository
                 .GetCalificacionesByGrupo(grupo.IdGrupo)
@@ -294,6 +319,7 @@ namespace Universidad.Services
             Grupo grupo = ObtenerYValidarGrupoDelProfesor(profesor, idGrupo);
             ValidarFechaTope();
             ValidarRangoNotas(acumulado, examen);
+            SincronizarCalificacionesDeGrupo(profesor, grupo);
 
             Calificacion? calificacion = _profesorRepository.GetCalificacion(grupo.IdGrupo, cedulaEstudiante);
             if (calificacion == null)

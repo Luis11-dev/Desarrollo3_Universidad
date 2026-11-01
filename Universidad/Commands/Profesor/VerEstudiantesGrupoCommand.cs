@@ -52,12 +52,14 @@ namespace Universidad.Commands.Profesor
                     .ReadAndValidate();
 
                 int indiceSeleccionado = int.Parse(input) - 1;
-                HorarioClase materiaSeleccionada = materias[indiceSeleccionado];
+                HorarioClase materiaSeleccionada = _profesorService.ObtenerYValidarHorarioDelProfesor(
+                    _profesorActual,
+                    materias[indiceSeleccionado].IdHorario);
 
                 _writer.Clear();
                 _writer.ShowHeader($"ESTUDIANTES DEL GRUPO: {materiaSeleccionada.Grupo.NombreGrupo} ({materiaSeleccionada.Materia.Nombre.ToUpper()})");
 
-                IReadOnlyCollection<PerfilUniversitario> estudiantes = _profesorService.VerEstudiantesDeGrupo(_profesorActual, materiaSeleccionada.Grupo.IdGrupo);
+                IReadOnlyCollection<Models.Estudiante> estudiantes = materiaSeleccionada.EstudiantesInscritos;
 
                 if (estudiantes.Count == 0)
                 {

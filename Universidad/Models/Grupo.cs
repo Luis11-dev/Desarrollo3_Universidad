@@ -49,5 +49,10 @@ namespace Universidad.Models
                 _estudiantes.Add(estudiante);
             }
         }
+
+        public void AsignarModalidad(Modalidad modalidad)
+        {
+            Modalidad = modalidad;
+        }
     }
 }

@@ -87,6 +87,11 @@ namespace Universidad.Repositories
             _inscripciones.Add(inscripcion);
             horario.InscribirEstudiante(estudiante);
             horario.Grupo.AgregarEstudiante(estudiante);
+
+            if (_profesorRepository.GetCalificacion(horario.Grupo.IdGrupo, estudiante.Cedula) == null)
+            {
+                _profesorRepository.AddCalificacion(new Calificacion(estudiante, horario.Grupo, horario.Materia));
+            }
         }
 
         private void ValidarPrerrequisitos(Estudiante estudiante, Materia materia)
