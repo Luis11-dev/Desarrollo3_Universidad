@@ -1,6 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
+using Universidad.Data;
 using Universidad.Models;
+using Universidad.Repositories;
 using Universidad.Services;
 using Universidad.Util;
 
@@ -9,12 +13,17 @@ namespace Universidad.Commands.Administrador
     public class RegistrarEstudianteCommand : ICommand
     {
         private readonly EstudianteService _estudianteService;
+        private readonly ProfesorRepository _profesorRepository;
         private readonly IConsoleWriter _writer;
 
-        public RegistrarEstudianteCommand(EstudianteService estudianteService, IConsoleWriter writer)
+        public RegistrarEstudianteCommand(
+            EstudianteService estudianteService,
+            ProfesorRepository profesorRepository,
+            IConsoleWriter writer)
         {
-            _estudianteService = estudianteService;
-            _writer = writer;
+            _estudianteService = estudianteService ?? throw new ArgumentNullException(nameof(estudianteService));
+            _profesorRepository = profesorRepository ?? throw new ArgumentNullException(nameof(profesorRepository));
+            _writer = writer ?? throw new ArgumentNullException(nameof(writer));
         }
 
         public void Execute()
@@ -64,10 +73,16 @@ namespace Universidad.Commands.Administrador
                     .NotEmpty("La direccion no puede estar vacia.")
                     .ReadAndValidate();
 
-                string carrera = new Validator("Ingrese carrera o programa de estudio: ")
-                    .NotEmpty("La carrera no puede estar vacia.")
-                    .SoloLetras("La carrera o programa de estudio debe contener unicamente letras y espacios.")
+                List<Carrera> carreras = Seeds.Carreras;
+                string[] opcionesCarreras = carreras.Select(c => c.Nombre).ToArray();
+                _writer.DisplayMenu("Seleccione la carrera del estudiante:", opcionesCarreras);
+
+                string inputCarrera = new Validator("Ingrese opcion de carrera: ")
+                    .NotEmpty()
+                    .OnlyDigits()
+                    .InputBetweenXandY(1, carreras.Count)
                     .ReadAndValidate();
+                string carrera = carreras[int.Parse(inputCarrera) - 1].Nombre;
 
                 _writer.DisplayMenu("Seleccione el estado del estudiante:", "Activo", "Inactivo");
                 string estadoOpcion = new Validator("Ingrese opcion de estado (1-2): ")
@@ -85,6 +100,7 @@ namespace Universidad.Commands.Administrador
 
                 string password = new Validator("Ingrese contrasenia para el login: ")
                     .NotEmpty("La contrasenia no puede estar vacia.")
+                    .SinEspacios("La contraseña no debe contener espacios en blanco.")
                     .PasswordSegura("La contrasenia debe tener al menos 8 caracteres e incluir mayuscula, minuscula, numero y caracter especial.")
                     .ReadAndValidate();
 
@@ -101,6 +117,28 @@ namespace Universidad.Commands.Administrador
                     user,
                     password
                 );
+
+                // Asignar grupo cohorte correspondiente
+                List<Grupo> gruposDisponibles = _profesorRepository.GetAllGrupos();
+                if (gruposDisponibles.Count > 0)
+                {
+                    string[] opcionesGrupos = gruposDisponibles
+                        .Select(g => $"{g.NombreGrupo} ({g.Carrera} - Año {g.AnioAcademico}) [Estudiantes: {g.Estudiantes.Count}/{g.Cupos}]")
+                        .ToArray();
+
+                    _writer.DisplayMenu("Seleccione el Grupo cohorte al que pertenecera el estudiante:", opcionesGrupos);
+
+                    string inputGrupo = new Validator("Ingrese opcion de grupo: ")
+                        .NotEmpty()
+                        .OnlyDigits()
+                        .InputBetweenXandY(1, gruposDisponibles.Count)
+                        .ReadAndValidate();
+
+                    Grupo grupoSeleccionado = gruposDisponibles[int.Parse(inputGrupo) - 1];
+                    grupoSeleccionado.AgregarEstudiante(nuevoEstudiante);
+
+                    _writer.ShowMessage($"\nEstudiante asignado exitosamente al grupo: {grupoSeleccionado.NombreGrupo}");
+                }
 
                 _writer.ShowMessage($"\nEstudiante registrado exitosamente.");
                 _writer.ShowMessage($"Nombre: {nuevoEstudiante.Nombre} | Carnet/Cedula: {nuevoEstudiante.Cedula}");

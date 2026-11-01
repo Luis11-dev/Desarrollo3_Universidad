@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Universidad.Models;
 using Universidad.Repositories;
 
@@ -6,10 +7,34 @@ namespace Universidad.Data
 {
     public static class Seeds
     {
+        public static List<Carrera> Carreras { get; } = new List<Carrera>
+        {
+            new Carrera("C01", "Ingenieria en Sistemas"),
+            new Carrera("C02", "Ingenieria Industrial")
+        };
+
+        public static List<AnioAcademico> AniosAcademicos { get; } = new List<AnioAcademico>
+        {
+            new AnioAcademico(1, "Primer Año"),
+            new AnioAcademico(2, "Segundo Año"),
+            new AnioAcademico(3, "Tercer Año"),
+            new AnioAcademico(4, "Cuarto Año"),
+            new AnioAcademico(5, "Quinto Año")
+        };
+
+        public static List<Semestre> Semestres { get; } = new List<Semestre>
+        {
+            new Semestre(1, "I Semestre"),
+            new Semestre(2, "II Semestre")
+        };
+
         public static void Inicializar(
             ProfesorRepository profesorRepository,
             EstudianteRepository estudianteRepository,
-            AdministradorRepository? administradorRepository = null)
+            AdministradorRepository? administradorRepository = null,
+            MateriaRepository? materiaRepository = null,
+            PlanAcademicoRepository? planRepository = null,
+            HorarioClaseRepository? horarioRepository = null)
         {
             if (administradorRepository != null && administradorRepository.GetAll().Count == 0)
             {
@@ -25,6 +50,43 @@ namespace Universidad.Data
                 );
                 administradorRepository.Add(admin);
             }
+
+            // Semillas de Materias
+            if (materiaRepository != null && materiaRepository.ObtenerTodas().Count == 0)
+            {
+                Materia mat1 = new Materia("MAT101", "Matematica I");
+                Materia prog1 = new Materia("SIS101", "Introduccion a la Programacion");
+                Materia prog2 = new Materia("SIS201", "Programacion Orientada a Objetos");
+                prog2.AgregarPrerrequisito("SIS101");
+
+                Materia desa3 = new Materia("SIS301", "Desarrollo de Aplicaciones III");
+                desa3.AgregarPrerrequisito("SIS201");
+
+                Materia bd1 = new Materia("SIS302", "Bases de Datos I");
+
+                materiaRepository.Agregar(mat1);
+                materiaRepository.Agregar(prog1);
+                materiaRepository.Agregar(prog2);
+                materiaRepository.Agregar(desa3);
+                materiaRepository.Agregar(bd1);
+            }
+
+            // Semillas de Planes Académicos
+            if (planRepository != null && planRepository.GetAll().Count == 0)
+            {
+                PlanAcademico plan1 = new PlanAcademico("PLAN-SIS-1-1", "C01", 1, 1);
+                plan1.AgregarCodigoMateria("MAT101");
+                plan1.AgregarCodigoMateria("SIS101");
+                planRepository.Add(plan1);
+
+                PlanAcademico plan3 = new PlanAcademico("PLAN-SIS-3-1", "C01", 3, 1);
+                plan3.AgregarCodigoMateria("SIS301");
+                plan3.AgregarCodigoMateria("SIS302");
+                planRepository.Add(plan3);
+            }
+
+            Profesor? profesorActual = null;
+            Grupo? grupoActual = null;
 
             if (profesorRepository.GetAll().Count == 0)
             {
@@ -43,6 +105,7 @@ namespace Universidad.Data
                 );
 
                 profesorRepository.Add(profesor);
+                profesorActual = profesor;
 
                 Grupo grupo = new Grupo(
                     idGrupo: "G01",
@@ -54,10 +117,13 @@ namespace Universidad.Data
                     dia: "Lunes",
                     horaInicio: new TimeSpan(8, 0, 0),
                     horaFin: new TimeSpan(11, 0, 0),
-                    profesorAsignado: profesor
+                    profesorAsignado: profesor,
+                    carrera: "Ingenieria en Sistemas",
+                    anioAcademico: 3
                 );
 
                 profesorRepository.AddGrupo(grupo);
+                grupoActual = grupo;
 
                 if (estudianteRepository.GetAll().Count == 0)
                 {
@@ -81,6 +147,36 @@ namespace Universidad.Data
                     Calificacion calificacion = new Calificacion(estudiante, grupo);
                     profesorRepository.AddCalificacion(calificacion);
                 }
+            }
+            else
+            {
+                profesorActual = profesorRepository.GetAll()[0];
+                grupoActual = profesorRepository.GetAllGrupos()[0];
+            }
+
+            // Semilla de HorarioClase
+            if (horarioRepository != null && horarioRepository.GetAll().Count == 0 && profesorActual != null && grupoActual != null)
+            {
+                Materia materiaDesa = materiaRepository?.ObtenerPorCodigo("SIS301") 
+                    ?? new Materia("SIS301", "Desarrollo de Aplicaciones III");
+
+                HorarioClase horario = new HorarioClase(
+                    idHorario: "H01",
+                    grupo: grupoActual,
+                    materia: materiaDesa,
+                    profesor: profesorActual,
+                    dia: "Lunes",
+                    horaInicio: new TimeSpan(8, 0, 0),
+                    horaFin: new TimeSpan(11, 0, 0),
+                    modalidad: Modalidad.Regular
+                );
+
+                if (estudianteRepository.GetAll().Count > 0)
+                {
+                    horario.InscribirEstudiante(estudianteRepository.GetAll()[0]);
+                }
+
+                horarioRepository.Add(horario);
             }
         }
     }

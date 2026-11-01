@@ -7,10 +7,14 @@ namespace Universidad.Models
     {
         public string IdGrupo { get; private set; } = string.Empty;
         public string NombreGrupo { get; private set; } = string.Empty;
-        public string NombreMateria { get; private set; } = string.Empty;
-        public int Cupos { get; private set; }
+        public string Carrera { get; private set; } = string.Empty;
+        public int AnioAcademico { get; private set; }
         public int Semestre { get; private set; }
         public Modalidad Modalidad { get; private set; }
+        public int Cupos { get; private set; }
+
+        // Propiedades de retrocompatibilidad
+        public string NombreMateria { get; private set; } = string.Empty;
         public string Dia { get; private set; } = string.Empty;
         public TimeSpan HoraInicio { get; private set; }
         public TimeSpan HoraFin { get; private set; }
@@ -21,6 +25,26 @@ namespace Universidad.Models
 
         public Grupo() { }
 
+        // Constructor orientado a cohorte de estudiantes con Carrera y Año Académico
+        public Grupo(
+            string idGrupo,
+            string nombreGrupo,
+            string carrera,
+            int anioAcademico,
+            int semestre,
+            Modalidad modalidad,
+            int cupos)
+        {
+            IdGrupo = idGrupo;
+            NombreGrupo = nombreGrupo;
+            Carrera = carrera;
+            AnioAcademico = anioAcademico;
+            Semestre = semestre;
+            Modalidad = modalidad;
+            Cupos = cupos;
+        }
+
+        // Constructor con retrocompatibilidad para llamadas existentes
         public Grupo(
             string idGrupo,
             string nombreGrupo,
@@ -31,14 +55,12 @@ namespace Universidad.Models
             string dia,
             TimeSpan horaInicio,
             TimeSpan horaFin,
-            Profesor? profesorAsignado = null)
+            Profesor? profesorAsignado = null,
+            string carrera = "Ingenieria en Sistemas",
+            int anioAcademico = 1)
+            : this(idGrupo, nombreGrupo, carrera, anioAcademico, semestre, modalidad, cupos)
         {
-            IdGrupo = idGrupo;
-            NombreGrupo = nombreGrupo;
             NombreMateria = materia;
-            Cupos = cupos;
-            Semestre = semestre;
-            Modalidad = modalidad;
             Dia = dia;
             HoraInicio = horaInicio;
             HoraFin = horaFin;
@@ -52,7 +74,10 @@ namespace Universidad.Models
 
         public void AgregarEstudiante(PerfilUniversitario estudiante)
         {
-            _estudiantes.Add(estudiante);
+            if (estudiante != null && !_estudiantes.Contains(estudiante))
+            {
+                _estudiantes.Add(estudiante);
+            }
         }
 
         public int ObtenerHorasContrato() => Modalidad == Modalidad.Dominical ? 60 : 80;

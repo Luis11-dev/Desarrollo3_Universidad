@@ -78,7 +78,8 @@ namespace Universidad.Commands.Administrador
 
                 string password = new Validator("Ingrese contrasenia para el login: ")
                     .NotEmpty("La contrasenia no puede estar vacia.")
-                    .MinLength(4, "La contrasenia debe tener al menos 4 caracteres.")
+                    .SinEspacios("La contraseña no debe contener espacios en blanco.")
+                    .PasswordSegura()
                     .ReadAndValidate();
 
                 Models.Profesor nuevoProfesor = _profesorService.RegistrarProfesor(

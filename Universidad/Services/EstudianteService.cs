@@ -163,7 +163,7 @@ namespace Universidad.Services
             if (_estudianteRepository.ExisteCedulaEnProfesor(cedula))
             {
                 throw new InvalidOperationException(
-                    "Esta cédula ya pertenece a un profesor.");
+                    "Esta cédula ya pertenece a un estudiante.");
             }
 
             if (_estudianteRepository.GetByUser(user) != null ||
