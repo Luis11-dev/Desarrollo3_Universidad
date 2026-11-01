@@ -139,6 +139,8 @@ namespace Universidad.Commands.Administrador
                     _writer.ShowMessage($"\nEstudiante asignado exitosamente al grupo: {grupoSeleccionado.NombreGrupo}");
                 }
 
+                FileManager.GuardarEstudiantes(_estudianteService.ObtenerEstudiantes(), _profesorRepository.GetAllGrupos());
+
                 _writer.ShowMessage($"\nEstudiante registrado exitosamente.");
                 _writer.ShowMessage($"Nombre: {nuevoEstudiante.Nombre} | Carnet/Cedula: {nuevoEstudiante.Cedula}");
                 _writer.ShowMessage($"Carrera: {nuevoEstudiante.Carrera} | Estado: {(nuevoEstudiante.Activo ? "Activo" : "Inactivo")}");

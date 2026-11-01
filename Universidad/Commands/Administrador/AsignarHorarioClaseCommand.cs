@@ -231,14 +231,6 @@ namespace Universidad.Commands.Administrador
                     modalidad
                 );
 
-                foreach (PerfilUniversitario estudiantePerfil in grupoSeleccionado.Estudiantes)
-                {
-                    if (estudiantePerfil is Models.Estudiante estudiante)
-                    {
-                        nuevoHorario.InscribirEstudiante(estudiante);
-                    }
-                }
-
                 _horarioRepository.Add(nuevoHorario);
 
                 if (_contratoRepository != null)
@@ -249,6 +241,8 @@ namespace Universidad.Commands.Administrador
                         contrato.AsignarMateria(nuevoHorario);
                     }
                 }
+
+                FileManager.GuardarHorarios(_horarioRepository.GetAll());
 
                 _writer.ShowMessage("\nAsignacion de horario guardada exitosamente.");
                 _writer.ShowMessage($"ID Horario: {nuevoHorario.IdHorario}");

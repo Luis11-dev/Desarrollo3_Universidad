@@ -24,6 +24,14 @@ namespace Universidad.Repositories
             return _inscripciones.ToList();
         }
 
+        public void Agregar(Inscripcion inscripcion)
+        {
+            if (inscripcion != null && !_inscripciones.Any(i => i.IdInscripcion.Equals(inscripcion.IdInscripcion, StringComparison.OrdinalIgnoreCase)))
+            {
+                _inscripciones.Add(inscripcion);
+            }
+        }
+
         public List<Inscripcion> ObtenerPorEstudiante(string cedula)
         {
             return _inscripciones

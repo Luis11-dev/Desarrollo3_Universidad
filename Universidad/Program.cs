@@ -8,6 +8,7 @@ namespace Universidad
     {
         static void Main(string[] args)
         {
+            Startup.InicializarDatos();
             IConsoleWriter consoleWriter = Startup.InitConsoleWriter();
             AuthController authController = Startup.InitAuthController();
 

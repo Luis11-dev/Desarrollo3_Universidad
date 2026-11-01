@@ -146,6 +146,11 @@ namespace Universidad.Services
             return profesor;
         }
 
+        public List<Profesor> ObtenerProfesores()
+        {
+            return _profesorRepository.GetAll();
+        }
+
         public List<HorarioClase> ObtenerMateriasAsignadas(Profesor profesor)
         {
             ValidarRolProfesor(profesor);

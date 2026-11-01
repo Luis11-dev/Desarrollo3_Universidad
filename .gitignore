@@ -50,3 +50,8 @@ ehthumbs.db
 appsettings.*.local.json
 secrets.json
 .env
+
+
+# Persistencia de datos locales
+[Dd]ata[Ff]iles/
+Universidad/DataFiles/

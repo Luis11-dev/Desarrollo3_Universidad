@@ -18,6 +18,7 @@ namespace Universidad.Util
         private static InscripcionRepository? _inscripcionRepository;
         private static IConsoleWriter? _consoleWriter;
         private static bool _seedsLoaded = false;
+        private static bool _archivosCargados = false;
 
         public static IConsoleWriter InitConsoleWriter()
         {
@@ -114,6 +115,164 @@ namespace Universidad.Util
             if (_estudianteRepository == null) _estudianteRepository = new EstudianteRepository(_profesorRepository);
 
             EnsureSeeds();
+            InicializarDatos();
+        }
+
+        public static void InicializarDatos()
+        {
+            if (_archivosCargados)
+            {
+                return;
+            }
+
+            if (_profesorRepository == null ||
+                _estudianteRepository == null ||
+                _materiaRepository == null ||
+                _horarioClaseRepository == null)
+            {
+                return;
+            }
+
+            _archivosCargados = true;
+
+            // 1. Cargar profesores
+            List<ProfesorDto> profesoresDto = FileManager.CargarProfesoresDto();
+            foreach (ProfesorDto pDto in profesoresDto)
+            {
+                if (_profesorRepository.GetByCedula(pDto.Cedula) == null)
+                {
+                    Profesor profesor = new Profesor(
+                        pDto.Cedula,
+                        pDto.Nombre,
+                        pDto.CorreoElectronico,
+                        pDto.NumeroCelular,
+                        pDto.Direccion,
+                        pDto.Genero,
+                        pDto.EstadoCivil,
+                        pDto.Profesion,
+                        pDto.Especialidad,
+                        pDto.User,
+                        pDto.Password
+                    );
+                    _profesorRepository.Add(profesor);
+                }
+            }
+
+            // 2. Cargar estudiantes
+            List<EstudianteDto> estudiantesDto = FileManager.CargarEstudiantesDto();
+            foreach (EstudianteDto eDto in estudiantesDto)
+            {
+                Estudiante? existente = _estudianteRepository.GetByCedula(eDto.Cedula);
+                Estudiante estudiante;
+                if (existente == null)
+                {
+                    estudiante = new Estudiante(
+                        eDto.Cedula,
+                        eDto.Nombre,
+                        eDto.FechaNacimiento,
+                        eDto.CorreoElectronico,
+                        eDto.NumeroCelular,
+                        eDto.Direccion,
+                        eDto.Genero,
+                        eDto.Carrera,
+                        eDto.Activo,
+                        eDto.User,
+                        eDto.Password
+                    );
+                    _estudianteRepository.Add(estudiante);
+                }
+                else
+                {
+                    estudiante = existente;
+                }
+
+                if (!string.IsNullOrWhiteSpace(eDto.IdGrupo))
+                {
+                    Grupo? grupo = _profesorRepository.GetGrupoById(eDto.IdGrupo);
+                    if (grupo != null && !grupo.Estudiantes.Any(est => est.Cedula.Equals(estudiante.Cedula, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        grupo.AgregarEstudiante(estudiante);
+                    }
+                }
+            }
+
+            // 3. Cargar horarios
+            List<HorarioClaseDto> horariosDto = FileManager.CargarHorariosDto();
+            foreach (HorarioClaseDto hDto in horariosDto)
+            {
+                if (_horarioClaseRepository.GetAll().Any(h => h.IdHorario.Equals(hDto.IdHorario, StringComparison.OrdinalIgnoreCase)))
+                {
+                    continue;
+                }
+
+                Grupo? grupo = _profesorRepository.GetGrupoById(hDto.IdGrupo);
+                Materia? materia = _materiaRepository.ObtenerPorCodigo(hDto.CodigoMateria);
+                Profesor? profesor = _profesorRepository.GetByCedula(hDto.CedulaProfesor);
+
+                if (grupo != null && materia != null && profesor != null)
+                {
+                    HorarioClase horario = new HorarioClase(
+                        hDto.IdHorario,
+                        grupo,
+                        materia,
+                        profesor,
+                        hDto.Dia,
+                        hDto.HoraInicio,
+                        hDto.HoraFin,
+                        hDto.Modalidad
+                    );
+
+                    foreach (string cedula in hDto.CedulasEstudiantesInscritos)
+                    {
+                        Estudiante? est = _estudianteRepository.GetByCedula(cedula);
+                        if (est != null)
+                        {
+                            horario.InscribirEstudiante(est);
+                        }
+                    }
+
+                    _horarioClaseRepository.Add(horario);
+
+                    Contrato? contrato = _contratoRepository?.GetContratoActivo(profesor.Cedula);
+                    if (contrato != null)
+                    {
+                        contrato.AsignarMateria(horario);
+                    }
+                }
+            }
+
+            // 4. Cargar inscripciones
+            if (_inscripcionRepository != null)
+            {
+                List<InscripcionDto> inscripcionesDto = FileManager.CargarInscripcionesDto();
+                foreach (InscripcionDto iDto in inscripcionesDto)
+                {
+                    if (_inscripcionRepository.ObtenerTodas().Any(i => i.IdInscripcion.Equals(iDto.IdInscripcion, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        continue;
+                    }
+
+                    Estudiante? estudiante = _estudianteRepository.GetByCedula(iDto.CedulaEstudiante);
+                    HorarioClase? horario = _horarioClaseRepository.GetAll().FirstOrDefault(h => h.IdHorario.Equals(iDto.IdHorario, StringComparison.OrdinalIgnoreCase));
+
+                    if (estudiante != null && horario != null)
+                    {
+                        Inscripcion inscripcion = new Inscripcion(
+                            iDto.IdInscripcion,
+                            estudiante,
+                            horario,
+                            iDto.PeriodoAcademico
+                        );
+
+                        _inscripcionRepository.Agregar(inscripcion);
+
+                        if (!horario.EstudiantesInscritos.Any(e => e.Cedula.Equals(estudiante.Cedula, StringComparison.OrdinalIgnoreCase)))
+                        {
+                            horario.InscribirEstudiante(estudiante);
+                        }
+                    }
+                }
+            }
         }
 
         public static AuthService InitAuthService()

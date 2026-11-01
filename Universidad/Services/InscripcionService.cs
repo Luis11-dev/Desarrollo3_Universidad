@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Universidad.Models;
 using Universidad.Repositories;
+using Universidad.Util;
 
 namespace Universidad.Services
 {
@@ -78,6 +79,9 @@ namespace Universidad.Services
                     estudiante,
                     horario,
                     periodoAcademico);
+
+                FileManager.GuardarHorarios(_horarioRepository.GetAll());
+                FileManager.GuardarInscripciones(_inscripcionRepository.ObtenerTodas());
 
                 mensaje = "Inscripcion realizada satisfactoriamente.";
                 return true;
