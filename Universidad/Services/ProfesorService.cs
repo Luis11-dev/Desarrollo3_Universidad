@@ -145,20 +145,17 @@ namespace Universidad.Services
             return profesor;
         }
 
-        // Obtener las materias asignadas al profesor
         public List<HorarioClase> ObtenerMateriasAsignadas(Profesor profesor)
         {
             ValidarRolProfesor(profesor);
             return _horarioRepository.GetByProfesor(profesor.Cedula);
         }
 
-        // Alias para compatibilidad de nomenclatura
         public List<HorarioClase> ObtenerHorariosAsignados(Profesor profesor)
         {
             return ObtenerMateriasAsignadas(profesor);
         }
 
-        // Obtener los grupos asignados a partir de las materias que imparte el profesor
         public List<Grupo> ObtenerGruposAsignados(Profesor profesor)
         {
             ValidarRolProfesor(profesor);
@@ -169,27 +166,23 @@ namespace Universidad.Services
                 .ToList();
         }
 
-        // Consultar el contrato laboral vigente del profesor
         public Contrato? ObtenerContratoVigente(Profesor profesor)
         {
             ValidarRolProfesor(profesor);
             return _contratoRepository.GetContratoActivo(profesor.Cedula);
         }
 
-        // Consultar la liquidación de planilla del profesor
         public PlanillaProfesor ConsultarPlanilla(Profesor profesor)
         {
             ValidarRolProfesor(profesor);
             return _planillaService.CalcularPlanillaProfesor(profesor);
         }
 
-        // Alias para compatibilidad con el comando existente
         public PlanillaProfesor ConsultarContratoYPlanilla(Profesor profesor)
         {
             return ConsultarPlanilla(profesor);
         }
 
-        // Valida que el horario exista y pertenezca al profesor que consulta
         public HorarioClase ObtenerYValidarHorarioDelProfesor(Profesor profesor, string idHorario)
         {
             ValidarRolProfesor(profesor);
@@ -210,7 +203,6 @@ namespace Universidad.Services
             return horario;
         }
 
-        // Valida que el grupo exista y tenga materias asignadas al profesor que consulta
         public Grupo ObtenerYValidarGrupoDelProfesor(Profesor profesor, string idGrupo)
         {
             ValidarRolProfesor(profesor);
@@ -232,7 +224,6 @@ namespace Universidad.Services
             return grupo;
         }
 
-        // 1. Ver los estudiantes que pertenecen a su grupo (cohorte)
         public IReadOnlyCollection<PerfilUniversitario> VerEstudiantesDeGrupo(Profesor profesor, string idGrupo)
         {
             Grupo grupo = ObtenerYValidarGrupoDelProfesor(profesor, idGrupo);
@@ -362,7 +353,6 @@ namespace Universidad.Services
             return calificacion;
         }
 
-        // 5. Marcar su asistencia a cada materia (15 minutos hábiles después de la hora de inicio)
         public AsistenciaProfesor MarcarAsistencia(Profesor profesor, string idHorario, DateTime fecha, TimeSpan horaEntrada)
         {
             HorarioClase horario = ObtenerYValidarHorarioDelProfesor(profesor, idHorario);
@@ -387,7 +377,6 @@ namespace Universidad.Services
             return asistencia;
         }
 
-        // Si el profesor no asiste a una materia, se registra como ausencia
         public AsistenciaProfesor RegistrarAusencia(Profesor profesor, string idHorario, DateTime fecha)
         {
             HorarioClase horario = ObtenerYValidarHorarioDelProfesor(profesor, idHorario);

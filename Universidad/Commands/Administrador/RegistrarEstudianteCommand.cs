@@ -118,7 +118,6 @@ namespace Universidad.Commands.Administrador
                     password
                 );
 
-                // Asignar grupo cohorte correspondiente
                 List<Grupo> gruposDisponibles = _profesorRepository.GetAllGrupos();
                 if (gruposDisponibles.Count > 0)
                 {

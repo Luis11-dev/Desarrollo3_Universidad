@@ -47,7 +47,6 @@ namespace Universidad.Commands.Profesor
                     return;
                 }
 
-                // 1. Detalle del contrato y materias asignadas
                 _writer.ShowMessage("--- 1. DETALLE DE MATERIAS ASIGNADAS EN CONTRATO ---");
                 _writer.ShowMessage(string.Format(
                     "{0,-10} {1,-26} {2,-12} {3,-10} {4,-22} {5,-14}",
@@ -72,7 +71,6 @@ namespace Universidad.Commands.Profesor
                 _writer.ShowMessage($"Total Horas Contratadas:          {planilla.HorasContratadasMes} hrs/mes");
                 _writer.ShowMessage($"Salario Mensual Pactado:          C$ {planilla.SalarioBruto:N2}");
 
-                // 2. Resumen de planilla de pago con descuentos por inasistencia
                 _writer.ShowMessage("\n--- 2. LIQUIDACION DE PLANILLA DEL PERIODO ---");
                 _writer.ShowMessage($"Salario Base Pactado:             C$ {planilla.SalarioBruto:N2}");
                 _writer.ShowMessage($"Ausencias a materias registradas: {planilla.CantidadAusencias} sesion(es)");

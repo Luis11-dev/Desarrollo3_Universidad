@@ -41,7 +41,6 @@ namespace Universidad.Commands.Administrador
 
             try
             {
-                // 1. Seleccionar Carrera
                 List<Carrera> carreras = Seeds.Carreras;
                 string[] opcionesCarreras = carreras.Select(c => c.Nombre).ToArray();
                 _writer.DisplayMenu("Seleccione la Carrera:", opcionesCarreras);
@@ -53,7 +52,6 @@ namespace Universidad.Commands.Administrador
                     .ReadAndValidate();
                 Carrera carreraSeleccionada = carreras[int.Parse(inputCarrera) - 1];
 
-                // 2. Seleccionar Año Académico
                 List<AnioAcademico> anios = Seeds.AniosAcademicos;
                 string[] opcionesAnios = anios.Select(a => a.Nombre).ToArray();
                 _writer.DisplayMenu("Seleccione el Año Academico:", opcionesAnios);
@@ -65,7 +63,6 @@ namespace Universidad.Commands.Administrador
                     .ReadAndValidate();
                 AnioAcademico anioSeleccionado = anios[int.Parse(inputAnio) - 1];
 
-                // 3. Seleccionar Semestre
                 List<Semestre> semestres = Seeds.Semestres;
                 string[] opcionesSemestres = semestres.Select(s => s.Nombre).ToArray();
                 _writer.DisplayMenu("Seleccione el Semestre:", opcionesSemestres);
@@ -77,7 +74,6 @@ namespace Universidad.Commands.Administrador
                     .ReadAndValidate();
                 Semestre semestreSeleccionado = semestres[int.Parse(inputSemestre) - 1];
 
-                // 4. Validar materias disponibles en el Plan Académico
                 PlanAcademico? plan = _planRepository.GetByCarreraAnioSemestre(
                     carreraSeleccionada.IdCarrera,
                     anioSeleccionado.IdAnioAcademico,
@@ -91,7 +87,6 @@ namespace Universidad.Commands.Administrador
                     return;
                 }
 
-                // Cargar instancias de Materia desde MateriaRepository
                 List<Materia> materiasDisponibles = plan.CodigosMaterias
                     .Select(cod => _materiaRepository.ObtenerPorCodigo(cod))
                     .Where(m => m != null)
@@ -115,7 +110,6 @@ namespace Universidad.Commands.Administrador
                     .ReadAndValidate();
                 Materia materiaSeleccionada = materiasDisponibles[int.Parse(inputMateria) - 1];
 
-                // 5. Seleccionar Grupo
                 List<Grupo> todosGrupos = _profesorRepository.GetAllGrupos();
                 List<Grupo> gruposCandidatos = todosGrupos
                     .Where(g => g.Carrera.Equals(carreraSeleccionada.Nombre, StringComparison.OrdinalIgnoreCase) ||
@@ -144,7 +138,6 @@ namespace Universidad.Commands.Administrador
                     .ReadAndValidate();
                 Grupo grupoSeleccionado = gruposCandidatos[int.Parse(inputGrupo) - 1];
 
-                // 6. Seleccionar Profesor
                 List<Models.Profesor> profesores = _profesorRepository.GetAll();
                 if (profesores.Count == 0)
                 {
@@ -163,7 +156,6 @@ namespace Universidad.Commands.Administrador
                     .ReadAndValidate();
                 Models.Profesor profesorSeleccionado = profesores[int.Parse(inputProfesor) - 1];
 
-                // 7. Seleccionar Día
                 string[] diasSemana = { "Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado", "Domingo" };
                 _writer.DisplayMenu("Seleccione el dia de la clase:", diasSemana);
 
@@ -174,7 +166,6 @@ namespace Universidad.Commands.Administrador
                     .ReadAndValidate();
                 string diaSeleccionado = diasSemana[int.Parse(inputDia) - 1];
 
-                // 8. Ingresar Horas
                 TimeSpan horaInicio;
                 TimeSpan horaFin;
                 string[] formatosHora = { @"hh\:mm", @"h\:mm" };
@@ -210,12 +201,10 @@ namespace Universidad.Commands.Administrador
                     break;
                 }
 
-                // 9. Modalidad
                 Modalidad modalidad = diaSeleccionado.Equals("Domingo", StringComparison.OrdinalIgnoreCase) 
                     ? Modalidad.Dominical 
                     : Modalidad.Regular;
 
-                // 10. Validar Cruces de Horario
                 if (_horarioRepository.ExisteCruceProfesor(profesorSeleccionado.Cedula, diaSeleccionado, horaInicio, horaFin))
                 {
                     _writer.ShowError($"\nError de cruce: El profesor {profesorSeleccionado.Nombre} ya tiene una clase asignada el {diaSeleccionado} en el horario de {horaInicio:hh\\:mm} a {horaFin:hh\\:mm}.");
@@ -230,7 +219,6 @@ namespace Universidad.Commands.Administrador
                     return;
                 }
 
-                // 11. Crear HorarioClase y Guardar
                 string idHorario = "H" + (_horarioRepository.GetAll().Count + 1).ToString("D2");
                 HorarioClase nuevoHorario = new HorarioClase(
                     idHorario,
@@ -243,7 +231,6 @@ namespace Universidad.Commands.Administrador
                     modalidad
                 );
 
-                // Inscribir a los estudiantes del grupo que correspondan
                 foreach (PerfilUniversitario estudiantePerfil in grupoSeleccionado.Estudiantes)
                 {
                     if (estudiantePerfil is Models.Estudiante estudiante)
