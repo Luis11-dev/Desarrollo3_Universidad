@@ -11,10 +11,11 @@ namespace Universidad.Controllers
 
         private int _maxIntentosPermitidos = 3;
 
-        public AuthController(AuthService authService, IConsoleWriter writer)
+        public AuthController(AuthService authService, IConsoleWriter writer, int maxIntentos = 3)
         {
             _authService = authService;
             _writer = writer;
+            _maxIntentosPermitidos = maxIntentos;
         }
 
         public IAutentication? IniciarSesion()
@@ -85,4 +86,3 @@ namespace Universidad.Controllers
         }
     }
 }
-

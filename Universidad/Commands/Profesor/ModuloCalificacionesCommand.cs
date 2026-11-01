@@ -38,7 +38,7 @@ namespace Universidad.Commands.Profesor
                 string[] opcionesGrupos = new string[grupos.Count + 1];
                 for (int i = 0; i < grupos.Count; i++)
                 {
-                    opcionesGrupos[i] = $"{grupos[i].NombreMateria} (Grupo: {grupos[i].NombreGrupo} - {grupos[i].Modalidad})";
+                    opcionesGrupos[i] = $"{grupos[i].NombreGrupo} ({grupos[i].Carrera} - Año {grupos[i].AnioAcademico} - {grupos[i].Modalidad})";
                 }
                 opcionesGrupos[grupos.Count] = "Volver al menu anterior";
 
@@ -73,7 +73,7 @@ namespace Universidad.Commands.Profesor
             do
             {
                 _writer.Clear();
-                _writer.ShowHeader($"CALIFICACIONES - {grupo.NombreMateria.ToUpper()} (GRUPO {grupo.NombreGrupo})");
+                _writer.ShowHeader($"CALIFICACIONES - GRUPO {grupo.NombreGrupo} ({grupo.Carrera.ToUpper()})");
 
                 // solo habilitamos convocatoria si hay alumnos que quedaron entre 40 y 59
                 List<Calificacion> candidatosConvocatoria = _profesorService

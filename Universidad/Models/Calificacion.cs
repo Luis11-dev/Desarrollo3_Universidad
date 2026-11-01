@@ -6,6 +6,7 @@ namespace Universidad.Models
     {
         public PerfilUniversitario? Estudiante { get; private set; }
         public Grupo? Grupo { get; private set; }
+        public Materia? Materia { get; private set; }
         public int? Acumulado { get; private set; }
         public int? Examen { get; private set; }
         public int? Nota { get; private set; }
@@ -19,11 +20,17 @@ namespace Universidad.Models
 
         public Calificacion() { }
 
-        public Calificacion(PerfilUniversitario estudiante, Grupo grupo)
+        public Calificacion(PerfilUniversitario estudiante, Grupo grupo, Materia? materia = null)
         {
             Estudiante = estudiante;
             Grupo = grupo;
+            Materia = materia;
             Estado = EstadoCalificacion.Pendiente;
+        }
+
+        public void AsignarMateria(Materia materia)
+        {
+            Materia = materia;
         }
 
         public void RegistrarNotas(int acumulado, int examen)
@@ -58,7 +65,7 @@ namespace Universidad.Models
             {
                 return EstadoCalificacion.Aprobado;
             }
-            else if (nota >= NotaMinimaConvocatoria && nota < NotaAprobacion)
+            else if (nota >= NotaMinimaConvocatoria)
             {
                 return EstadoCalificacion.ReprobadoConConvocatoria;
             }

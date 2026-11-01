@@ -4,18 +4,30 @@ using Universidad.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace Universidad.Services
 {
     public class ProfesorService
     {
         private readonly ProfesorRepository _profesorRepository;
-        public const decimal TarifaPorHora = 400m;
+        private readonly HorarioClaseRepository _horarioRepository;
+        private readonly ContratoRepository _contratoRepository;
+        private readonly PlanillaService _planillaService;
+
+        public const decimal TarifaPorHoraDefault = 400m;
         public const int MinutosToleranciaAsistencia = 15;
 
-        public ProfesorService(ProfesorRepository profesorRepository)
+        public ProfesorService(
+            ProfesorRepository profesorRepository,
+            HorarioClaseRepository horarioRepository,
+            ContratoRepository contratoRepository,
+            PlanillaService planillaService)
         {
-            _profesorRepository = profesorRepository;
+            _profesorRepository = profesorRepository ?? throw new ArgumentNullException(nameof(profesorRepository));
+            _horarioRepository = horarioRepository ?? throw new ArgumentNullException(nameof(horarioRepository));
+            _contratoRepository = contratoRepository ?? throw new ArgumentNullException(nameof(contratoRepository));
+            _planillaService = planillaService ?? throw new ArgumentNullException(nameof(planillaService));
         }
 
         // Validación general de rol
@@ -27,15 +39,180 @@ namespace Universidad.Services
             }
         }
 
-        // Obtener los grupos asignados únicamente a este profesor
+        // Registrar un nuevo profesor en el sistema
+        public Profesor RegistrarProfesor(
+            string cedula,
+            string nombre,
+            string correo,
+            int numeroCelular,
+            string direccion,
+            Genero genero,
+            string estadoCivil,
+            string profesion,
+            string? especialidad,
+            string user,
+            string password)
+        {
+            if (string.IsNullOrWhiteSpace(cedula))
+            {
+                throw new ArgumentException("La cedula es obligatoria.");
+            }
+            if (string.IsNullOrWhiteSpace(nombre))
+            {
+                throw new ArgumentException("El nombre es obligatorio.");
+            }
+            if (string.IsNullOrWhiteSpace(correo))
+            {
+                throw new ArgumentException("El correo electronico es obligatorio.");
+            }
+            if (numeroCelular <= 0)
+            {
+                throw new ArgumentException("El numero de celular no es valido.");
+            }
+            if (string.IsNullOrWhiteSpace(direccion))
+            {
+                throw new ArgumentException("La direccion es obligatoria.");
+            }
+            if (string.IsNullOrWhiteSpace(estadoCivil))
+            {
+                throw new ArgumentException("El estado civil es obligatorio.");
+            }
+            if (string.IsNullOrWhiteSpace(profesion))
+            {
+                throw new ArgumentException("La profesion es obligatoria.");
+            }
+            if (string.IsNullOrWhiteSpace(user))
+            {
+                throw new ArgumentException("El nombre de usuario es obligatorio.");
+            }
+            if (string.IsNullOrWhiteSpace(password))
+            {
+                throw new ArgumentException("La contrasenia es obligatoria.");
+            }
+
+            cedula = cedula.Trim().ToUpperInvariant();
+            nombre = nombre.Trim();
+            correo = correo.Trim();
+            direccion = direccion.Trim();
+            estadoCivil = estadoCivil.Trim();
+            profesion = profesion.Trim();
+            especialidad = string.IsNullOrWhiteSpace(especialidad) ? null : especialidad.Trim();
+            user = user.Trim();
+
+            string patronCedula = @"^\d{3}-\d{6}-\d{4}[A-Za-z]$";
+            if (!Regex.IsMatch(cedula, patronCedula))
+            {
+                throw new ArgumentException("El formato de la cedula debe ser 000-000000-0000X.");
+            }
+
+            string patronCorreo = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
+            if (!Regex.IsMatch(correo, patronCorreo))
+            {
+                throw new ArgumentException("El formato del correo electronico no es valido.");
+            }
+
+            if (_profesorRepository.GetByCedula(cedula) != null)
+            {
+                throw new InvalidOperationException("Ya existe un profesor registrado con esa cedula.");
+            }
+
+            if (_profesorRepository.GetByUser(user) != null)
+            {
+                throw new InvalidOperationException("El nombre de usuario ya esta en uso por otro profesor.");
+            }
+
+            bool correoExiste = _profesorRepository.GetAll()
+                .Any(p => p.CorreoElectronico.Equals(correo, StringComparison.OrdinalIgnoreCase));
+            if (correoExiste)
+            {
+                throw new InvalidOperationException("El correo electronico ya esta registrado.");
+            }
+
+            Profesor profesor = new Profesor(
+                cedula,
+                nombre,
+                correo,
+                numeroCelular,
+                direccion,
+                genero,
+                estadoCivil,
+                profesion,
+                especialidad,
+                user,
+                password
+            );
+
+            _profesorRepository.Add(profesor);
+            return profesor;
+        }
+
+        // Obtener las materias asignadas al profesor
+        public List<HorarioClase> ObtenerMateriasAsignadas(Profesor profesor)
+        {
+            ValidarRolProfesor(profesor);
+            return _horarioRepository.GetByProfesor(profesor.Cedula);
+        }
+
+        // Alias para compatibilidad de nomenclatura
+        public List<HorarioClase> ObtenerHorariosAsignados(Profesor profesor)
+        {
+            return ObtenerMateriasAsignadas(profesor);
+        }
+
+        // Obtener los grupos asignados a partir de las materias que imparte el profesor
         public List<Grupo> ObtenerGruposAsignados(Profesor profesor)
         {
             ValidarRolProfesor(profesor);
-            return _profesorRepository.GetGruposByProfesor(profesor.Cedula);
+            return _horarioRepository.GetByProfesor(profesor.Cedula)
+                .Select(h => h.Grupo)
+                .GroupBy(g => g.IdGrupo)
+                .Select(g => g.First())
+                .ToList();
         }
 
-        // Valida que el grupo exista y pertenezca al profesor que consulta
-        private Grupo ObtenerYValidarGrupoDelProfesor(Profesor profesor, string idGrupo)
+        // Consultar el contrato laboral vigente del profesor
+        public Contrato? ObtenerContratoVigente(Profesor profesor)
+        {
+            ValidarRolProfesor(profesor);
+            return _contratoRepository.GetContratoActivo(profesor.Cedula);
+        }
+
+        // Consultar la liquidación de planilla del profesor
+        public PlanillaProfesor ConsultarPlanilla(Profesor profesor)
+        {
+            ValidarRolProfesor(profesor);
+            return _planillaService.CalcularPlanillaProfesor(profesor);
+        }
+
+        // Alias para compatibilidad con el comando existente
+        public PlanillaProfesor ConsultarContratoYPlanilla(Profesor profesor)
+        {
+            return ConsultarPlanilla(profesor);
+        }
+
+        // Valida que el horario exista y pertenezca al profesor que consulta
+        public HorarioClase ObtenerYValidarHorarioDelProfesor(Profesor profesor, string idHorario)
+        {
+            ValidarRolProfesor(profesor);
+
+            HorarioClase? horario = _horarioRepository.GetAll()
+                .FirstOrDefault(h => h.IdHorario.Equals(idHorario, StringComparison.OrdinalIgnoreCase));
+
+            if (horario == null)
+            {
+                throw new KeyNotFoundException($"No se encontro la materia con codigo de horario '{idHorario}'.");
+            }
+
+            if (!horario.Profesor.Cedula.Equals(profesor.Cedula, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new UnauthorizedAccessException("Acceso denegado: Solo puede gestionar materias que tiene asignadas.");
+            }
+
+            return horario;
+        }
+
+        // Valida que el grupo exista y tenga materias asignadas al profesor que consulta
+        public Grupo ObtenerYValidarGrupoDelProfesor(Profesor profesor, string idGrupo)
         {
             ValidarRolProfesor(profesor);
 
@@ -45,7 +222,10 @@ namespace Universidad.Services
                 throw new KeyNotFoundException($"No se encontro el grupo con codigo '{idGrupo}'.");
             }
 
-            if (grupo.ProfesorAsignado == null || grupo.ProfesorAsignado.Cedula != profesor.Cedula)
+            bool asignado = _horarioRepository.GetByProfesor(profesor.Cedula)
+                .Any(h => h.Grupo.IdGrupo.Equals(idGrupo, StringComparison.OrdinalIgnoreCase));
+
+            if (!asignado)
             {
                 throw new GrupoNoAsignadoException();
             }
@@ -53,7 +233,7 @@ namespace Universidad.Services
             return grupo;
         }
 
-        // 1. Ver los estudiantes que pertenecen a su grupo
+        // 1. Ver los estudiantes que pertenecen a su grupo (cohorte)
         public IReadOnlyCollection<PerfilUniversitario> VerEstudiantesDeGrupo(Profesor profesor, string idGrupo)
         {
             Grupo grupo = ObtenerYValidarGrupoDelProfesor(profesor, idGrupo);
@@ -181,12 +361,12 @@ namespace Universidad.Services
             return calificacion;
         }
 
-        // 5. Marcar su asistencia a cada clase (15 minutos hábiles después de la hora de inicio)
-        public AsistenciaProfesor MarcarAsistencia(Profesor profesor, string idGrupo, DateTime fecha, TimeSpan horaEntrada)
+        // 5. Marcar su asistencia a cada materia (15 minutos hábiles después de la hora de inicio)
+        public AsistenciaProfesor MarcarAsistencia(Profesor profesor, string idHorario, DateTime fecha, TimeSpan horaEntrada)
         {
-            Grupo grupo = ObtenerYValidarGrupoDelProfesor(profesor, idGrupo);
+            HorarioClase horario = ObtenerYValidarHorarioDelProfesor(profesor, idHorario);
 
-            TimeSpan horaInicio = grupo.HoraInicio;
+            TimeSpan horaInicio = horario.HoraInicio;
             TimeSpan horaLimite = horaInicio.Add(TimeSpan.FromMinutes(MinutosToleranciaAsistencia));
 
             if (horaEntrada < horaInicio)
@@ -201,39 +381,18 @@ namespace Universidad.Services
                     $"Tiempo limite excedido: La clase inicia a las {horaInicio:hh\\:mm} y el limite de 15 minutos vencio a las {horaLimite:hh\\:mm}. Ya no puede marcar asistencia.");
             }
 
-            AsistenciaProfesor asistencia = new AsistenciaProfesor(profesor, grupo, fecha, horaEntrada, asistio: true);
+            AsistenciaProfesor asistencia = new AsistenciaProfesor(profesor, horario, fecha, horaEntrada, asistio: true);
             _profesorRepository.AddAsistencia(asistencia);
             return asistencia;
         }
 
-        // Si el profesor no asiste a una clase, se registra como ausencia
-        public AsistenciaProfesor RegistrarAusencia(Profesor profesor, string idGrupo, DateTime fecha)
+        // Si el profesor no asiste a una materia, se registra como ausencia
+        public AsistenciaProfesor RegistrarAusencia(Profesor profesor, string idHorario, DateTime fecha)
         {
-            Grupo grupo = ObtenerYValidarGrupoDelProfesor(profesor, idGrupo);
-            AsistenciaProfesor ausencia = new AsistenciaProfesor(profesor, grupo, fecha, horaEntrada: null, asistio: false);
+            HorarioClase horario = ObtenerYValidarHorarioDelProfesor(profesor, idHorario);
+            AsistenciaProfesor ausencia = new AsistenciaProfesor(profesor, horario, fecha, horaEntrada: null, asistio: false);
             _profesorRepository.AddAsistencia(ausencia);
             return ausencia;
-        }
-
-        // 6. Consultar su contrato y su planilla de pago
-        public (List<Grupo> GruposContratados, decimal SalarioBaseTotal, int CantidadAusencias, int HorasDescontadas, decimal DescuentoTotal, decimal SalarioNeto) ConsultarContratoYPlanilla(Profesor profesor)
-        {
-            ValidarRolProfesor(profesor);
-
-            List<Grupo> grupos = _profesorRepository.GetGruposByProfesor(profesor.Cedula);
-            decimal salarioBaseTotal = grupos.Sum(g => g.ObtenerSalarioContrato());
-
-            List<AsistenciaProfesor> ausencias = _profesorRepository
-                .GetAsistenciasByProfesor(profesor.Cedula)
-                .Where(a => !a.Asistio)
-                .ToList();
-
-            int cantidadAusencias = ausencias.Count;
-            int horasDescontadas = ausencias.Sum(a => a.Grupo.ObtenerHorasPorSesion());
-            decimal descuentoTotal = horasDescontadas * TarifaPorHora;
-            decimal salarioNeto = Math.Max(0m, salarioBaseTotal - descuentoTotal);
-
-            return (grupos, salarioBaseTotal, cantidadAusencias, horasDescontadas, descuentoTotal, salarioNeto);
         }
     }
 }

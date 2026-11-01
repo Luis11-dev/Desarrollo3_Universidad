@@ -23,40 +23,41 @@ namespace Universidad.Commands.Profesor
         public void Execute()
         {
             _writer.Clear();
-            _writer.ShowHeader("ESTUDIANTES ASIGNADOS POR GRUPO");
+            _writer.ShowHeader("ESTUDIANTES POR MATERIA Y GRUPO ASIGNADO");
 
             try
             {
-                List<Grupo> grupos = _profesorService.ObtenerGruposAsignados(_profesorActual);
+                List<HorarioClase> materias = _profesorService.ObtenerMateriasAsignadas(_profesorActual);
 
-                if (grupos.Count == 0)
+                if (materias.Count == 0)
                 {
-                    _writer.ShowMessage("\nNo tiene grupos asignados en este momento.");
+                    _writer.ShowMessage("\nNo tiene materias ni grupos asignados en este momento.");
                     _writer.WaitForKey();
                     return;
                 }
 
-                string[] opcionesGrupos = new string[grupos.Count];
-                for (int i = 0; i < grupos.Count; i++)
+                string[] opcionesMaterias = new string[materias.Count];
+                for (int i = 0; i < materias.Count; i++)
                 {
-                    opcionesGrupos[i] = $"{grupos[i].NombreMateria} (Grupo: {grupos[i].NombreGrupo} - Mod: {grupos[i].Modalidad} - {grupos[i].Dia} {grupos[i].HoraInicio:hh\\:mm} a {grupos[i].HoraFin:hh\\:mm})";
+                    var m = materias[i];
+                    opcionesMaterias[i] = $"{m.Materia.Nombre} (Grupo: {m.Grupo.NombreGrupo} - Mod: {m.Modalidad} - {m.Dia} {m.HoraInicio:hh\\:mm} a {m.HoraFin:hh\\:mm})";
                 }
 
-                _writer.DisplayMenu("Seleccione el grupo a consultar:", opcionesGrupos);
+                _writer.DisplayMenu("Seleccione la materia / grupo a consultar:", opcionesMaterias);
 
-                string input = new Validator("Ingrese el numero de grupo: ")
+                string input = new Validator("Ingrese su opcion: ")
                     .NotEmpty()
                     .OnlyDigits()
-                    .InputBetweenXandY(1, grupos.Count)
+                    .InputBetweenXandY(1, materias.Count)
                     .ReadAndValidate();
 
                 int indiceSeleccionado = int.Parse(input) - 1;
-                Grupo grupoSeleccionado = grupos[indiceSeleccionado];
+                HorarioClase materiaSeleccionada = materias[indiceSeleccionado];
 
                 _writer.Clear();
-                _writer.ShowHeader($"ESTUDIANTES DEL GRUPO: {grupoSeleccionado.NombreGrupo} ({grupoSeleccionado.NombreMateria.ToUpper()})");
+                _writer.ShowHeader($"ESTUDIANTES DEL GRUPO: {materiaSeleccionada.Grupo.NombreGrupo} ({materiaSeleccionada.Materia.Nombre.ToUpper()})");
 
-                IReadOnlyCollection<PerfilUniversitario> estudiantes = _profesorService.VerEstudiantesDeGrupo(_profesorActual, grupoSeleccionado.IdGrupo);
+                IReadOnlyCollection<PerfilUniversitario> estudiantes = _profesorService.VerEstudiantesDeGrupo(_profesorActual, materiaSeleccionada.Grupo.IdGrupo);
 
                 if (estudiantes.Count == 0)
                 {
@@ -64,7 +65,7 @@ namespace Universidad.Commands.Profesor
                 }
                 else
                 {
-                    _writer.ShowMessage($"Total inscritos: {estudiantes.Count} | Cupos disponibles: {Math.Max(0, grupoSeleccionado.Cupos - estudiantes.Count)}\n");
+                    _writer.ShowMessage($"Total inscritos en cohorte: {estudiantes.Count} | Cupos disponibles: {Math.Max(0, materiaSeleccionada.Grupo.Cupos - estudiantes.Count)}\n");
                     _writer.ShowMessage(string.Format("{0,-15} {1,-35} {2,-30}", "CEDULA", "NOMBRE COMPLETO", "CORREO ELECTRONICO"));
                     _writer.ShowMessage(new string('-', 82));
 

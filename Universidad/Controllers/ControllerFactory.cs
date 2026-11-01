@@ -10,6 +10,10 @@ namespace Universidad.Controllers
         {
             switch (usuario.Rol)
             {
+                case Rol.Administrador:
+                {
+                    return Startup.InitAdministradorController((Administrador)usuario);
+                }
                 case Rol.Profesor:
                 {
                     return Startup.InitProfesorController((Profesor)usuario);
@@ -26,4 +30,3 @@ namespace Universidad.Controllers
         }
     }
 }
-

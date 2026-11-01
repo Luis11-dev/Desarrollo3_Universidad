@@ -1,4 +1,3 @@
-
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,18 +8,21 @@ namespace Universidad.Services
 {
     public class InscripcionService
     {
+        private readonly HorarioClaseRepository _horarioRepository;
         private readonly MateriaRepository _materiaRepository;
-        private readonly ProfesorRepository _profesorRepository;
         private readonly InscripcionRepository _inscripcionRepository;
+        private readonly ProfesorRepository _profesorRepository;
 
         public InscripcionService(
+            HorarioClaseRepository horarioRepository,
             MateriaRepository materiaRepository,
-            ProfesorRepository profesorRepository,
-            InscripcionRepository inscripcionRepository)
+            InscripcionRepository inscripcionRepository,
+            ProfesorRepository profesorRepository)
         {
-            _materiaRepository = materiaRepository;
-            _profesorRepository = profesorRepository;
-            _inscripcionRepository = inscripcionRepository;
+            _horarioRepository = horarioRepository ?? throw new ArgumentNullException(nameof(horarioRepository));
+            _materiaRepository = materiaRepository ?? throw new ArgumentNullException(nameof(materiaRepository));
+            _inscripcionRepository = inscripcionRepository ?? throw new ArgumentNullException(nameof(inscripcionRepository));
+            _profesorRepository = profesorRepository ?? throw new ArgumentNullException(nameof(profesorRepository));
         }
 
         public List<Materia> ObtenerMaterias()
@@ -28,39 +30,56 @@ namespace Universidad.Services
             return _materiaRepository.ObtenerTodas();
         }
 
-        public List<Grupo> ObtenerGruposDisponibles()
+        public List<HorarioClase> ObtenerHorariosDisponibles(Estudiante estudiante, string periodo)
         {
-            return _profesorRepository.GetAllGrupos()
-                .Where(g => g.ProfesorAsignado != null)
+            if (estudiante == null)
+            {
+                throw new ArgumentNullException(nameof(estudiante));
+            }
+
+            List<Inscripcion> inscritas = _inscripcionRepository.ObtenerPorEstudiante(estudiante.Cedula)
+                .Where(i => i.PeriodoAcademico.Equals(periodo, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            List<string> codigosInscritos = inscritas.Select(i => i.Materia.Codigo).ToList();
+
+            return _horarioRepository.GetAll()
+                .Where(h =>
+                    !codigosInscritos.Contains(h.Materia.Codigo) &&
+                    (string.IsNullOrWhiteSpace(estudiante.Carrera) || h.Grupo.Carrera.Equals(estudiante.Carrera, StringComparison.OrdinalIgnoreCase)) &&
+                    h.EstudiantesInscritos.Count < h.Grupo.Cupos)
                 .ToList();
         }
 
-        public List<Inscripcion> ObtenerInscripcionesEstudiante(
-            string cedula)
+        public List<Inscripcion> ObtenerInscripcionesEstudiante(string cedula)
         {
             return _inscripcionRepository.ObtenerPorEstudiante(cedula);
         }
 
         public bool InscribirEstudiante(
             Estudiante estudiante,
-            Grupo grupo,
+            HorarioClase horario,
             string periodoAcademico,
             out string mensaje)
         {
             try
             {
                 if (estudiante == null)
+                {
                     throw new ArgumentNullException(nameof(estudiante));
+                }
 
-                if (grupo == null)
-                    throw new ArgumentNullException(nameof(grupo));
+                if (horario == null)
+                {
+                    throw new ArgumentNullException(nameof(horario));
+                }
 
                 _inscripcionRepository.Inscribir(
                     estudiante,
-                    grupo,
+                    horario,
                     periodoAcademico);
 
-                mensaje = "Inscripción realizada correctamente.";
+                mensaje = "Inscripcion realizada satisfactoriamente.";
                 return true;
             }
             catch (Exception ex)
@@ -73,23 +92,32 @@ namespace Universidad.Services
         public string GenerarComprobante(Inscripcion inscripcion)
         {
             if (inscripcion == null)
+            {
                 throw new ArgumentNullException(nameof(inscripcion));
+            }
 
             return
-                "========================================\n" +
-                "       COMPROBANTE DE INSCRIPCIÓN       \n" +
-                "========================================\n" +
-                $"Código: {inscripcion.IdInscripcion}\n" +
-                $"Estudiante: {inscripcion.Estudiante.Nombre}\n" +
-                $"Cédula: {inscripcion.Estudiante.Cedula}\n" +
-                $"Materia: {inscripcion.Grupo.NombreMateria}\n" +
-                $"Grupo: {inscripcion.Grupo.NombreGrupo}\n" +
-                $"Período: {inscripcion.PeriodoAcademico}\n" +
-                $"Profesor: {inscripcion.Grupo.ProfesorAsignado?.Nombre ?? "Sin asignar"}\n" +
-                $"Fecha: {inscripcion.FechaInscripcion:dd/MM/yyyy HH:mm}\n" +
-                "========================================\n" +
-                "       INSCRIPCIÓN REGISTRADA           \n" +
-                "========================================";
+                "================================================================================\n" +
+                "                       COMPROBANTE OFICIAL DE MATRICULA                         \n" +
+                "================================================================================\n" +
+                $"No. Matricula:       {inscripcion.IdInscripcion}\n" +
+                $"Periodo Academico:   {inscripcion.PeriodoAcademico}\n" +
+                $"Fecha de Registro:   {inscripcion.FechaInscripcion:dd/MM/yyyy HH:mm}\n" +
+                "--------------------------------------------------------------------------------\n" +
+                "DATOS DEL ESTUDIANTE:\n" +
+                $"Nombre:              {inscripcion.Estudiante.Nombre}\n" +
+                $"Carnet / Cedula:     {inscripcion.Estudiante.Cedula}\n" +
+                $"Carrera:             {inscripcion.Estudiante.Carrera}\n" +
+                "--------------------------------------------------------------------------------\n" +
+                "DETALLE DE LA MATERIA INSCRITA:\n" +
+                $"Asignatura:          [{inscripcion.Materia.Codigo}] {inscripcion.Materia.Nombre}\n" +
+                $"Grupo / Cohorte:     {inscripcion.Grupo.NombreGrupo} (Año {inscripcion.Grupo.AnioAcademico} - Semestre {inscripcion.Grupo.Semestre})\n" +
+                $"Modalidad:           {inscripcion.Horario.Modalidad}\n" +
+                $"Horario de Clases:   {inscripcion.Horario.Dia} {inscripcion.Horario.HoraInicio:hh\\:mm} a {inscripcion.Horario.HoraFin:hh\\:mm}\n" +
+                $"Profesor Impartidor: {inscripcion.Horario.Profesor.Nombre} ({inscripcion.Horario.Profesor.Profesion})\n" +
+                "================================================================================\n" +
+                "                    ESTADO DE LA INSCRIPCION: CONFIRMADA                        \n" +
+                "================================================================================";
         }
     }
 }

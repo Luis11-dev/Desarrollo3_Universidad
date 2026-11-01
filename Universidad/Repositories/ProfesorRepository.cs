@@ -51,13 +51,6 @@ namespace Universidad.Repositories
             return _grupos.FirstOrDefault(g => g.IdGrupo == idGrupo);
         }
 
-        public List<Grupo> GetGruposByProfesor(string cedulaProfesor)
-        {
-            return _grupos
-                .Where(g => g.ProfesorAsignado != null && g.ProfesorAsignado.Cedula == cedulaProfesor)
-                .ToList();
-        }
-
         // --- Calificaciones ---
         public void AddCalificacion(Calificacion calificacion)
         {
@@ -68,6 +61,13 @@ namespace Universidad.Repositories
         {
             return _calificaciones
                 .Where(c => c.Grupo != null && c.Grupo.IdGrupo == idGrupo)
+                .ToList();
+        }
+
+        public List<Calificacion> GetCalificacionesByEstudiante(string cedulaEstudiante)
+        {
+            return _calificaciones
+                .Where(c => c.Estudiante != null && c.Estudiante.Cedula.Equals(cedulaEstudiante, StringComparison.OrdinalIgnoreCase))
                 .ToList();
         }
 
