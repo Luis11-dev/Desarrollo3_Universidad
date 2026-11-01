@@ -96,6 +96,8 @@ namespace Universidad.Commands.Administrador
                     password
                 );
 
+                FileManager.GuardarProfesores(_profesorService.ObtenerProfesores());
+
                 _writer.ShowMessage($"\nProfesor registrado exitosamente.");
                 _writer.ShowMessage($"Nombre: {nuevoProfesor.Nombre} | Cedula: {nuevoProfesor.Cedula}");
                 _writer.ShowMessage($"Profesion: {nuevoProfesor.Profesion} | Especialidad: {nuevoProfesor.Especialidad ?? "Ninguna"}");

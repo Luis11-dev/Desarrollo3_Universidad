@@ -249,6 +249,8 @@ namespace Universidad.Commands.Administrador
                     contrato.AsignarMateria(nuevoHorario);
                 }
 
+                FileManager.GuardarHorarios(_horarioRepository.GetAll());
+
                 _writer.ShowMessage("\nAsignacion de horario guardada exitosamente.");
                 _writer.ShowMessage($"ID Horario: {nuevoHorario.IdHorario}");
                 _writer.ShowMessage($"Clase: {materiaSeleccionada.Nombre} ({materiaSeleccionada.Codigo})");
